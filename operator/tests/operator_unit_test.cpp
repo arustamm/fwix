@@ -14,13 +14,20 @@ class FFTTest : public testing::Test {
     auto hyper = std::make_shared<hypercube>(n1, n2, n3, n4);
     space4d = std::make_shared<complex4DReg>(hyper);
     space4d->set(1.f);
-    cuFFT = std::make_unique<cuFFT2d>(hyper, hyper);
+    cuFFT = std::make_unique<cuFFT2d>(hyper);
   }
 
   std::unique_ptr<cuFFT2d> cuFFT;
   std::shared_ptr<complex4DReg> space4d;
   int n1, n2, n3, n4;
 };
+
+TEST_F(FFTTest, no_memory) {
+  auto input = space4d->clone();
+  auto output = space4d->clone();
+  auto fft2 = cuFFT2d(space4d->getHyper(), cuFFT->model_vec, cuFFT->data_vec);
+  ASSERT_NO_THROW(fft2.forward(false, input, output));
+}
 
 TEST_F(FFTTest, check_flat_index) { 
   int ind1[] = {0,0,0,1};
@@ -37,9 +44,9 @@ TEST_F(FFTTest, check_complex_vector) {
   int *n = new int[ndim];
   float *d = new float[ndim];
   float *o = new float[ndim];
-  cudaMemcpy(n, cuFFT->model_vec["host"]->n, sizeof(int)*ndim, cudaMemcpyDeviceToHost);
-  cudaMemcpy(d, cuFFT->model_vec["host"]->d, sizeof(float)*ndim, cudaMemcpyDeviceToHost);
-  cudaMemcpy(o, cuFFT->model_vec["host"]->o, sizeof(float)*ndim, cudaMemcpyDeviceToHost);
+  cudaMemcpy(n, (*cuFFT->model_vec)["host"]->n, sizeof(int)*ndim, cudaMemcpyDeviceToHost);
+  cudaMemcpy(d, (*cuFFT->model_vec)["host"]->d, sizeof(float)*ndim, cudaMemcpyDeviceToHost);
+  cudaMemcpy(o, (*cuFFT->model_vec)["host"]->o, sizeof(float)*ndim, cudaMemcpyDeviceToHost);
   for (int i=0; i < ndim; ++i) {
     ASSERT_EQ(n[i], space4d->getHyper()->getAxis(i+1).n);
     ASSERT_EQ(d[i], space4d->getHyper()->getAxis(i+1).d);
@@ -48,6 +55,18 @@ TEST_F(FFTTest, check_complex_vector) {
   delete[] n;
   delete[] o;
   delete[] d;
+}
+
+TEST_F(FFTTest, complex_zero) { 
+  int n = space4d->getHyper()->getN123();
+  cuFloatComplex *mat = new cuFloatComplex[n];
+  (*cuFFT->model_vec)["host"]->zero();
+  cudaMemcpy(mat, (*cuFFT->model_vec)["host"]->mat, sizeof(cuFloatComplex)*n, cudaMemcpyDeviceToHost);
+  for (int i=0; i < n; ++i) {
+    ASSERT_EQ(mat[i].x, 0);
+    ASSERT_EQ(mat[i].y, 0);
+  }
+  delete[] mat;
 }
 
 

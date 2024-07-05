@@ -1,8 +1,8 @@
 
 
 # compiling CUDA files into objects
-set(CU_SRC fft_callback.cu)
-set(CU_INC CudaKernel.cuh fft_callback.cuh)
+set(CU_SRC fft_callback.cu complex_vector.cu)
+set(CU_INC CudaKernel.cuh fft_callback.cuh complex_vector.cuh)
 # add_library(cuda_objects OBJECT ${CU_SRC} ${CU_INC})
 # set_property(TARGET cuda_objects PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 

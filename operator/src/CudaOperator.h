@@ -10,52 +10,58 @@ template <class M, class D>
 class CudaOperator
 {
 public:
-	CudaOperator(const std::shared_ptr<hypercube>& domain, const std::shared_ptr<hypercube>& range, bool from_host = true, dim3 grid=1, dim3 block=1) 
-	: _from_host_(from_host), _grid_(grid), _block_(block) {
+	CudaOperator(const std::shared_ptr<hypercube>& domain, const std::shared_ptr<hypercube>& range, 
+								std::shared_ptr<ComplexVectorMap> model = nullptr, std::shared_ptr<ComplexVectorMap> data = nullptr, dim3 grid=1, dim3 block=1) 
+	: _grid_(grid), _block_(block) {
+		
 		setDomainRange(domain, range);
-
-		if (is_from_host()) {
-			model_vec["host"] = new complex_vector(domain);
-			data_vec["host"] = new complex_vector(range);
-			model_vec["device"] = model_vec["host"]->to_device();
-			data_vec["device"] = data_vec["host"]->to_device();
+		if (model == nullptr) {
+			model_alloc = true;
+			model_vec = make_complex_vector_map(domain, _grid_, _block_);
 		}
+		else model_vec = model;
+
+		if (data == nullptr) {
+			data_alloc = true;
+			data_vec = make_complex_vector_map(range, _grid_, _block_);
+		}
+		else data_vec = data;
 	 };
 
 	virtual ~CudaOperator() {
-		CHECK_CUDA_ERROR(cudaFree(model_vec["device"]));
-		CHECK_CUDA_ERROR(cudaFree(data_vec["device"]));
-		delete model_vec["host"];
-		delete data_vec["host"];
+		if (model_alloc) {
+			CHECK_CUDA_ERROR(cudaFree((*model_vec)["device"]));
+			delete (*model_vec)["host"];
+		}
+		if (data_alloc) {
+			CHECK_CUDA_ERROR(cudaFree((*data_vec)["device"]));
+			delete (*data_vec)["host"];
+		}
 	};
 
 	void set_grid(dim3 grid) {_grid_ = grid;};
 	void set_block(dim3 block) {_block_ = block;};
 
-	virtual void cu_forward(bool add, ComplexVectorMap& model, ComplexVectorMap& data) = 0;
-	virtual void cu_adjoint(bool add, ComplexVectorMap& model, ComplexVectorMap& data) = 0;
+	virtual void cu_forward(bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data) = 0;
+	virtual void cu_adjoint(bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data) = 0;
 
 
 	void forward(bool add, std::shared_ptr<M>& model, std::shared_ptr<D>& data) {
-		if (!is_from_host()) throw("Need to allocate the device side pointers first!");
 		if (!add) data->zero();
-		CHECK_CUDA_ERROR(cudaMemcpyAsync(model_vec["host"]->mat, model->getVals(), sizeof(cuFloatComplex) * getDomainSize(), cudaMemcpyHostToDevice));
+		CHECK_CUDA_ERROR(cudaMemcpyAsync((*model_vec)["host"]->mat, model->getVals(), sizeof(cuFloatComplex) * getDomainSize(), cudaMemcpyHostToDevice));
+		if (add) CHECK_CUDA_ERROR(cudaMemcpyAsync((*data_vec)["host"]->mat, data->getVals(), sizeof(cuFloatComplex) * getDomainSize(), cudaMemcpyHostToDevice));
 		cu_forward(add, model_vec, data_vec);
-		CHECK_CUDA_ERROR(cudaMemcpyAsync(data->getVals(), data_vec["host"]->mat, sizeof(cuFloatComplex) * getRangeSize(), cudaMemcpyDeviceToHost));
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(data->getVals(), (*data_vec)["host"]->mat, sizeof(cuFloatComplex) * getRangeSize(), cudaMemcpyDeviceToHost));
 	};
 
 	// this is host-to-host function
 	void adjoint(bool add, std::shared_ptr<M>& model, std::shared_ptr<D>& data) {
-		if (!is_from_host()) throw("Need to allocate the device side pointers first!");
 		if (!add) model->zero();
-		CHECK_CUDA_ERROR(cudaMemcpyAsync(data_vec["host"]->mat,data->getVals(),sizeof(cuFloatComplex) * getRangeSize(), cudaMemcpyHostToDevice));
+		CHECK_CUDA_ERROR(cudaMemcpyAsync((*data_vec)["host"]->mat,data->getVals(),sizeof(cuFloatComplex) * getRangeSize(), cudaMemcpyHostToDevice));
+		if (add) CHECK_CUDA_ERROR(cudaMemcpyAsync((*model_vec)["host"]->mat, model->getVals(), sizeof(cuFloatComplex) * getDomainSize(), cudaMemcpyHostToDevice));
 		cu_adjoint(add, model_vec, data_vec);
-		CHECK_CUDA_ERROR(cudaMemcpyAsync(model->getVals(),model_vec["host"]->mat,sizeof(cuFloatComplex) * getDomainSize(), cudaMemcpyDeviceToHost));
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(model->getVals(),(*model_vec)["host"]->mat,sizeof(cuFloatComplex) * getDomainSize(), cudaMemcpyDeviceToHost));
 	};
-	
-	bool is_from_host() {
-		return _from_host_;
-	}
 
 	const std::shared_ptr<hypercube>& getDomain() const{
 		return _domain;
@@ -108,13 +114,13 @@ public:
 		std::cout << "*********************************" << '\n';
 };
 
-ComplexVectorMap model_vec, data_vec; 
+std::shared_ptr<ComplexVectorMap> model_vec, data_vec; 
 
 protected:
 	std::shared_ptr<hypercube> _domain;
 	std::shared_ptr<hypercube> _range;
-	bool _from_host_;
 	dim3 _grid_, _block_;
+	bool model_alloc = false, data_alloc = false;
 	
 };
 

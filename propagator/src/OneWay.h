@@ -4,12 +4,13 @@
     OneWay () {};
     ~OneWay() {};
 
-    void forward (bool add, std::unique_ptr<complex4DReg> model, std::unique_ptr<complex4DReg> data) {
+    void cu_forward (bool add, ComplexVectorMap& model, ComplexVectorMap& data) {
       for (int iz = 0; iz < NZ; ++iz) {
         inject->set_depth(iz);
-        inject->cu_forward(false, )
+        inject->cu_forward(false, ..., _wfld_prev);
         // 2dFFT (x-y) --> (kx-ky)
-        onestep->cu_forward()
+        onestep->set_depth(iz);
+        onestep->cu_forward(true, _wfld_prev, _wfld_next);
       } 
       
     };

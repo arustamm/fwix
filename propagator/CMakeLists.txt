@@ -28,6 +28,16 @@ endif(SEPlib_FOUND)
 
 find_package(GTest REQUIRED)
 
+find_package(OpenCV REQUIRED core )
+include_directories( ${OpenCV_INCLUDE_DIRS} )
+
+find_package(TBB)
+if(TBB_found)
+	message("-- Found TBB")
+	include_directories(${TBB_INCLUDE_DIRS})
+	link_directories(${TBB_LIBRARIES})
+endif(TBB_found)
+
 # my Operator library
 include_directories(../operator/src)
 link_directories(../operator/lib)
@@ -37,13 +47,8 @@ include_directories(src)
 add_subdirectory(src)
 enable_testing()
 
-get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-foreach(dir ${dirs})
-  message(STATUS "dir='${dir}'")
-endforeach()
-
 add_subdirectory(tests)
-# add_subdirectory(src/python)
+add_subdirectory(src/python)
 
 # link_directories(${PROJECT_SOURCE_DIR}/lib)
 # add_subdirectory(test)

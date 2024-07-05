@@ -1,16 +1,18 @@
 #include <complex_vector.h>
+#include <complex_vector.cuh>
 #include <iostream>
 
-complex_vector* make_complex_vector_on_device(const std::shared_ptr<hypercube>& hyper) {
-  complex_vector *h_vec = new complex_vector(hyper);
-  complex_vector *d_vec;
-
-  CHECK_CUDA_ERROR(cudaMalloc(reinterpret_cast<void **>(&d_vec), sizeof(complex_vector)));
-  CHECK_CUDA_ERROR(cudaMemcpy(d_vec, h_vec, sizeof(complex_vector), cudaMemcpyHostToDevice));
-  free(h_vec);
-  return d_vec;
+std::shared_ptr<ComplexVectorMap> make_complex_vector_map(const std::shared_ptr<hypercube>& hyper, dim3 grid, dim3 block) {
+  auto vec = std::make_shared<ComplexVectorMap>();
+  (*vec)["host"] = new complex_vector(hyper, grid, block);
+  (*vec)["device"] = (*vec)["host"]->to_device();
+  return vec;
 }
 
+
+void complex_vector::add(complex_vector* vec){
+  launch_add(this, vec, _grid_, _block_);
+}
 
 
 

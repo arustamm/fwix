@@ -40,8 +40,13 @@ typedef struct complex_vector
     float* d;
     float* o;
     int nelem, ndim;
+    // for kernels
+    dim3 _grid_, _block_;
 
-    complex_vector(const std::shared_ptr<hypercube>& hyper) {
+    complex_vector(const std::shared_ptr<hypercube>& hyper, dim3 grid=1, dim3 block=1) {
+      
+      set_grid_block(grid, block);
+
       nelem = hyper->getN123();
       ndim = hyper->getNdim();
       CHECK_CUDA_ERROR(cudaMalloc(reinterpret_cast<void **>(&n), sizeof(int) * ndim));
@@ -67,6 +72,11 @@ typedef struct complex_vector
       delete[] h_o;
     }
 
+    void set_grid_block(dim3 grid, dim3 block) {
+      _grid_ = grid.x * grid.y * grid.z;
+      _block_ = block.x * block.y * block.z;
+    }
+
     complex_vector* to_device() {
       complex_vector* d_vec;
       CHECK_CUDA_ERROR(cudaMalloc(reinterpret_cast<void **>(&d_vec), sizeof(complex_vector)));
@@ -75,7 +85,21 @@ typedef struct complex_vector
     }
 
     void zero() {
-      cudaMemset(mat, 0, sizeof(cuFloatComplex)*nelem);
+      CHECK_CUDA_ERROR(cudaMemset(mat, 0, sizeof(cuFloatComplex)*nelem));
+    }
+
+    void add(complex_vector* vec);
+
+    complex_vector* clone() {
+      complex_vector* vec;
+      CHECK_CUDA_ERROR(cudaMemcpy(vec->n, n, sizeof(int)*ndim, cudaMemcpyDeviceToDevice));
+      CHECK_CUDA_ERROR(cudaMemcpy(vec->d, d, sizeof(float)*ndim, cudaMemcpyDeviceToDevice));
+      CHECK_CUDA_ERROR(cudaMemcpy(vec->o, o, sizeof(float)*ndim, cudaMemcpyDeviceToDevice));
+      CHECK_CUDA_ERROR(cudaMemcpy(vec->mat, mat, sizeof(cuFloatComplex)*ndim, cudaMemcpyDeviceToDevice));
+      vec->nelem = nelem;
+      vec->ndim = ndim;
+      allocated = true;
+      return vec;
     }
 
     ~complex_vector() {
@@ -91,6 +115,7 @@ typedef struct complex_vector
 
 typedef std::unordered_map<std::string, complex_vector*> ComplexVectorMap;
 
+std::shared_ptr<ComplexVectorMap> make_complex_vector_map(const std::shared_ptr<hypercube>& hyper, dim3 grid=1, dim3 block=1);
 
 
 

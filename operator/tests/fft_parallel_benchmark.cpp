@@ -61,8 +61,6 @@ class cpuFFTBenchmark : public benchmark::Fixture {
     int n2 = state.range(2);
     int n3 = state.range(1);
     int n4 = state.range(0);
-    std::cout << n1 << "\n";
-    std::cout << n4 << "\n";
     auto hyper = std::make_shared<hypercube>(n1, n2, n3, n4);
     model = std::make_shared<complex4DReg>(hyper);
     data = std::make_shared<complex4DReg>(hyper);
@@ -89,12 +87,20 @@ BENCHMARK_DEFINE_F(cpuFFTBenchmark, forward_host)(benchmark::State& state){
 };
 BENCHMARK_REGISTER_F(cpuFFTBenchmark, forward_host)
 -> Args({1, 1, 100, 100}) 
--> Args({1, 1, 500, 100}) 
+-> Args({1, 5, 100, 100}) 
+-> Args({1, 10, 100, 100}) 
+
 -> Args({1, 1, 100, 500}) 
+-> Args({1, 5, 100, 500}) 
+-> Args({1, 10, 100, 500}) 
+
 -> Args({1, 1, 1000, 1000}) 
--> Args({1, 1, 500, 5000}) 
+-> Args({1, 5, 1000, 1000}) 
 -> Args({1, 10, 1000, 1000}) 
--> Args({1, 10, 500, 5000})
+
+-> Args({1, 1, 500, 5000}) 
+-> Args({1, 5, 500, 5000}) 
+-> Args({1, 10, 500, 5000}) 
 ->UseManualTime();
 
 
@@ -117,28 +123,6 @@ class FFTBenchmark : public benchmark::Fixture {
   int n1, n2, n3, n4;
 };
 
-
-BENCHMARK_DEFINE_F(FFTBenchmark, forward_host)(benchmark::State& state){
-  for (auto _ : state) {
-    auto start = std::chrono::high_resolution_clock::now();
-    cuFFT->forward(false, model, data);
-    auto end = std::chrono::high_resolution_clock::now();
-    auto elapsed_seconds =
-      std::chrono::duration_cast<std::chrono::duration<double>>(
-        end - start);
-    state.SetIterationTime(elapsed_seconds.count());
-  }
-};
-BENCHMARK_REGISTER_F(FFTBenchmark, forward_host)
--> Args({1, 1, 100, 100}) 
--> Args({1, 1, 500, 100}) 
--> Args({1, 1, 100, 500}) 
--> Args({1, 1, 1000, 1000})
--> Args({1, 1, 500, 5000}) 
--> Args({1, 10, 1000, 1000}) 
--> Args({1, 10, 500, 5000})
--> UseManualTime();
-
 BENCHMARK_DEFINE_F(FFTBenchmark, forward_device)(benchmark::State& state){
   for (auto _ : state) {
     auto start = std::chrono::high_resolution_clock::now();
@@ -153,12 +137,20 @@ BENCHMARK_DEFINE_F(FFTBenchmark, forward_device)(benchmark::State& state){
 };
 BENCHMARK_REGISTER_F(FFTBenchmark, forward_device)
 -> Args({1, 1, 100, 100}) 
--> Args({1, 1, 500, 100}) 
+-> Args({1, 5, 100, 100}) 
+-> Args({1, 10, 100, 100}) 
+
 -> Args({1, 1, 100, 500}) 
--> Args({1, 1, 1000, 1000})  -> Threads(1)
--> Args({1, 1, 500, 5000}) 
+-> Args({1, 5, 100, 500}) 
+-> Args({1, 10, 100, 500}) 
+
+-> Args({1, 1, 1000, 1000}) 
+-> Args({1, 5, 1000, 1000}) 
 -> Args({1, 10, 1000, 1000}) 
--> Args({1, 10, 500, 5000})
+
+-> Args({1, 1, 500, 5000}) 
+-> Args({1, 5, 500, 5000}) 
+-> Args({1, 10, 500, 5000}) 
 -> UseManualTime();
 
 BENCHMARK_MAIN();

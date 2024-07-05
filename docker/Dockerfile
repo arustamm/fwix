@@ -18,6 +18,11 @@ RUN apt-get -y update &&\
 RUN pip3 install cmake --upgrade
 ENV PATH=~/.local/bin:$PATH
 
+RUN git clone https://github.com/opencv/opencv.git /opt/opencv/src && cd /opt/opencv/src && git checkout 4.x &&\
+    mkdir /opt/opencv/build && cd /opt/opencv/build  &&\
+    cmake -DBUILD_LIST=core ../src &&\
+    make -j8 install
+
 ARG sepflags="-O3 -ffast-math -DNDEBUG -DBOOST_DISABLE_ASSERTS -funroll-loops"
 
 RUN git clone http://zapad.stanford.edu/SEP-external/sep-iolibs.git /opt/sep-io/src && \
@@ -38,7 +43,7 @@ RUN pip install notebook &&\
     pip install h5py &&\
     pip install numba &&\
     pip install scipy &&\
-    pip install -U matplotlib
+    pip install -U matplotlib &&\
 
 RUN apt-get -y update &&\
     apt-get -y install vim
@@ -62,7 +67,7 @@ RUN pip install numba
 
 WORKDIR /home
 
-ENV PYTHONPATH=/opt/SEP/lib/python3.9
+ENV PYTHONPATH=/opt/SEP/lib/python3.8
 ENV PYTHONPATH=/opt/python-solver/GenericSolver/python:$PYTHONPATH
 ENV LD_LIBRARY_PATH=/opt/SEP/lib
 ENV PATH=$PATH:/opt/SEP/bin

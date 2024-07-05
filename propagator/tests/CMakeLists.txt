@@ -1,15 +1,16 @@
 
-
+include_directories(${TBB_INCLUDE_DIRS})
 # compiling cpp into objects
-set(CPP_SRC prop_unit_test.cpp)
-set(CPP_INC)
-add_executable(prop_unit_test ${CPP_SRC} ${CPP_INC})
-set_property(TARGET prop_unit_test PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
-target_link_libraries(prop_unit_test
-		CudaOperator CudaWEM
-		genericCpp sepVector hypercube
-		CUDA::cudart_static CUDA::cufft_static
-		GTest::gtest_main GTest::gtest)
+set(TEST_SOURCES prop_unit_test.cpp pspi_benchmark.cpp)
+    foreach(src ${TEST_SOURCES})
+        string(REPLACE ".cpp" "" obj ${src})
+        add_executable(${obj} ${src})
+        target_link_libraries(${obj} CudaOperator CudaWEM
+																			genericCpp sepVector hypercube
+																			CUDA::cudart_static CUDA::cufft_static
+																			GTest::gtest_main GTest::gtest
+																			tbb benchmark)
+        add_test(NAME ${obj} COMMAND ${obj})
+    endforeach()
 
-add_test(cuWEM_gtests prop_unit_test)

@@ -34,7 +34,8 @@ add_subdirectory(src)
 enable_testing()
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 add_subdirectory(tests)
-# add_subdirectory(src/python)
+# pybind wrapper
+add_subdirectory(src/python)
 
 # link_directories(${PROJECT_SOURCE_DIR}/lib)
 # add_subdirectory(test)
