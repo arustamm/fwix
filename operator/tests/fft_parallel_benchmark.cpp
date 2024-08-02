@@ -94,13 +94,15 @@ BENCHMARK_REGISTER_F(cpuFFTBenchmark, forward_host)
 -> Args({1, 5, 100, 500}) 
 -> Args({1, 10, 100, 500}) 
 
+-> Args({1, 1, 500, 5000}) 
+-> Args({1, 5, 500, 5000}) 
+-> Args({1, 10, 500, 5000}) 
+
 -> Args({1, 1, 1000, 1000}) 
 -> Args({1, 5, 1000, 1000}) 
 -> Args({1, 10, 1000, 1000}) 
 
--> Args({1, 1, 500, 5000}) 
--> Args({1, 5, 500, 5000}) 
--> Args({1, 10, 500, 5000}) 
+-> Iterations(10)
 ->UseManualTime();
 
 
@@ -144,13 +146,15 @@ BENCHMARK_REGISTER_F(FFTBenchmark, forward_device)
 -> Args({1, 5, 100, 500}) 
 -> Args({1, 10, 100, 500}) 
 
+-> Args({1, 1, 500, 5000}) 
+-> Args({1, 5, 500, 5000}) 
+-> Args({1, 10, 500, 5000}) 
+
 -> Args({1, 1, 1000, 1000}) 
 -> Args({1, 5, 1000, 1000}) 
 -> Args({1, 10, 1000, 1000}) 
 
--> Args({1, 1, 500, 5000}) 
--> Args({1, 5, 500, 5000}) 
--> Args({1, 10, 500, 5000}) 
+-> Iterations(10)
 -> UseManualTime();
 
 BENCHMARK_MAIN();

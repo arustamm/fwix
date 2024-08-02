@@ -2,15 +2,15 @@
 #include <cuda_runtime.h>
 #include <complex_vector.h>
 #include <cuComplex.h>
-#include <CudaKernel.cuh>
+#include <KernelLauncher.cuh>
 
 // phase shift
-__global__ void ps_forward(complex_vector* model, complex_vector* data, 
+__global__ void ps_forward(const complex_vector* __restrict__ model, complex_vector* __restrict__ data, 
   float* w2, float* kx, float* ky, cuFloatComplex* slow_ref, float dz, float eps);
-__global__ void ps_adjoint(complex_vector* model, complex_vector* data, 
+__global__ void ps_adjoint(complex_vector* __restrict__ model, const complex_vector* __restrict__ data, 
   float* w2, float* kx, float* ky, cuFloatComplex* slow_ref, float dz, float eps);
-typedef CudaKernel<float*, float*, float*, cuFloatComplex*, float, float> PS_kernel;
+typedef KernelLauncher<float*, float*, float*, cuFloatComplex*, float, float> PS_launcher;
 // selector
-__global__ void select_forward(complex_vector* model, complex_vector* data, int value, int* labels);
-typedef CudaKernel<int, int*> Selector_kernel;
+__global__ void select_forward(const complex_vector* __restrict__ model, complex_vector* __restrict__ data, int value, int* labels);
+typedef KernelLauncher<int, int*> Selector_launcher;
   

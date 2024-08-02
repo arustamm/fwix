@@ -4,7 +4,7 @@
 
 
 PhaseShift::PhaseShift(const std::shared_ptr<hypercube>& domain, float dz, float eps, 
-std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data, dim3 grid, dim3 block) 
+complex_vector* model, complex_vector* data, dim3 grid, dim3 block) 
 : CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block), _dz_(dz), _eps_(eps) {
 
   _grid_ = {128, 128, 8};
@@ -21,13 +21,13 @@ std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data,
   CHECK_CUDA_ERROR(cudaMalloc((void**)&_sref_, _nw_ * sizeof(std::complex<float>)));
 };
 
-void PhaseShift::cu_forward (bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data) {
-  if (!add) (*data)["host"]->zero();
-  fwd_kernel.launch((*model)["device"], (*data)["device"], d_w2, d_kx, d_ky, _sref_, _dz_, _eps_);
+void PhaseShift::cu_forward (bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
+  if (!add) data->zero();
+  fwd_kernel.launch(model, data, d_w2, d_kx, d_ky, _sref_, _dz_, _eps_);
 };
 
 
-void PhaseShift::cu_adjoint (bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data) {
-  if (!add) (*model)["host"]->zero();
-  adj_kernel.launch((*model)["device"], (*data)["device"], d_w2, d_kx, d_ky, _sref_, _dz_, _eps_);
+void PhaseShift::cu_adjoint (bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data) {
+  if (!add) model->zero();
+  adj_kernel.launch(model, data, d_w2, d_kx, d_ky, _sref_, _dz_, _eps_);
 }

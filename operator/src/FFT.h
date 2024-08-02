@@ -9,26 +9,27 @@ using namespace SEP;
 
 class cuFFT2d : public CudaOperator<complex4DReg, complex4DReg> {
 	public:
-		cuFFT2d(const std::shared_ptr<hypercube>& domain, std::shared_ptr<ComplexVectorMap> model = nullptr, std::shared_ptr<ComplexVectorMap> data = nullptr);
+		cuFFT2d(const std::shared_ptr<hypercube>& domain, complex_vector* model = nullptr, complex_vector* data = nullptr);
 		
 		~cuFFT2d() {
 			cufftDestroy(plan);
+			cudaFree(temp);
 		};
 
 		// this is on-device functions
-		void cu_forward(bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data);
-		void cu_adjoint(bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data);
-		void cu_forward(std::shared_ptr<ComplexVectorMap> data);
-		void cu_adjoint(std::shared_ptr<ComplexVectorMap> data);
+		void cu_forward(bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data);
+		void cu_adjoint(bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data);
+		void cu_forward(complex_vector* data);
+		void cu_adjoint(complex_vector* data);
 
 	private:
 		cufftHandle plan;
 		int NX, NY, BATCH, SIZE; 
-		std::shared_ptr<ComplexVectorMap> temp;
+		complex_vector* temp;
 
 		void register_ortho_callback() { 
 			auto h_storeCallbackPtr = get_host_callback_ptr();
-			cufftXtSetCallback(plan, (void **)&h_storeCallbackPtr, CUFFT_CB_ST_COMPLEX, (void **)&((*model_vec)["host"]->n));
+			cufftXtSetCallback(plan, (void **)&h_storeCallbackPtr, CUFFT_CB_ST_COMPLEX, (void **)&(model_vec->n));
 		}
 		
 

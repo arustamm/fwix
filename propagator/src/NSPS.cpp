@@ -3,9 +3,9 @@
 
 using namespace SEP;
 
-void NSPS::cu_adjoint(bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data) {
+void NSPS::cu_adjoint(bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data) {
 
-	  if(!add) (*model)["host"]->zero();
+	  if(!add) model->zero();
 
 		// pad->forward(model,model_pad,0);
 	  fft2d->cu_forward(0,data,model_k);
@@ -24,10 +24,10 @@ void NSPS::cu_adjoint(bool add, std::shared_ptr<ComplexVectorMap> model, std::sh
 
 }
 
-void NSPS::cu_forward(bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data) {
+void NSPS::cu_forward(bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
 
-		if(!add)  (*data)["host"]->zero();
-		(*model_k)["host"]->zero();
+		if(!add)  data->zero();
+		model_k->zero();
 
 		for (int iref=0; iref < _nref_; ++iref) {
 

@@ -6,7 +6,7 @@
 
 template class CudaKernel<float*, float*, float*, cuFloatComplex*, float, float>;
 
-__global__ void ps_forward(complex_vector* model, complex_vector* data, float* w2, float* kx, float* ky, cuFloatComplex* slow_ref, float dz, float eps) {
+__global__ void ps_forward(const complex_vector* __restrict__ model, complex_vector* __restrict__ data, float* w2, float* kx, float* ky, cuFloatComplex* slow_ref, float dz, float eps) {
 
   float a, b, c, re, im;
   int flat_ind;
@@ -56,7 +56,7 @@ __global__ void ps_forward(complex_vector* model, complex_vector* data, float* w
   }
 };
 
-__global__ void ps_adjoint(complex_vector* model, complex_vector* data, float* w2, float* kx, float* ky, cuFloatComplex* slow_ref, float dz, float eps) {
+__global__ void ps_adjoint(complex_vector* __restrict__ model, const complex_vector* __restrict__ data, float* w2, float* kx, float* ky, cuFloatComplex* slow_ref, float dz, float eps) {
   
   float a, b, c, re, im;
   int flat_ind;

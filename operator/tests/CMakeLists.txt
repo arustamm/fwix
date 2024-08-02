@@ -2,7 +2,8 @@
 
 # compiling cpp into objects
 
-set(TEST_SOURCES operator_unit_test.cpp fft_benchmark.cpp fft_parallel_benchmark.cpp)
+set(TEST_SOURCES operator_unit_test.cpp fft_benchmark.cpp 
+fft_parallel_benchmark.cpp cufft_saturation.cpp)
     foreach(src ${TEST_SOURCES})
         string(REPLACE ".cpp" "" obj ${src})
         add_executable(${obj} ${src})

@@ -11,10 +11,10 @@ using namespace SEP;
 class PhaseShift :  public CudaOperator<complex4DReg, complex4DReg> {
 public:
     PhaseShift(const std::shared_ptr<hypercube>& domain, float dz, float eps, 
-    std::shared_ptr<ComplexVectorMap> model = nullptr, std::shared_ptr<ComplexVectorMap> data = nullptr, dim3 grid=1, dim3 block=1);
+    complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid=1, dim3 block=1);
 
-    void cu_forward (bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data);
-    void cu_adjoint (bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data);
+    void cu_forward (bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data);
+    void cu_adjoint (bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data);
 
     void set_slow(std::complex<float>* sref) {
         CHECK_CUDA_ERROR(cudaMemcpy(_sref_, sref, _nw_*sizeof(std::complex<float>), cudaMemcpyHostToDevice));

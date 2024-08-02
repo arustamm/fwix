@@ -5,7 +5,7 @@
 #include <CudaKernel.cu>
 
 template class CudaKernel<int, int*>;
-__global__ void select_forward(complex_vector* model, complex_vector* data, int value, int* labels) {
+__global__ void select_forward(complex_vector* __restrict__ model, complex_vector* __restrict__ data, int value, int* labels) {
 
   int NX = model->n[0];
   int NY = model->n[1];

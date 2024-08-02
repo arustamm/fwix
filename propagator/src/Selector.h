@@ -11,7 +11,7 @@ class Selector : public CudaOperator<complex4DReg,complex4DReg>
 public:
 
 	Selector(const std::shared_ptr<hypercube>& domain, 
-	std::shared_ptr<ComplexVectorMap> model = nullptr, std::shared_ptr<ComplexVectorMap> data = nullptr, dim3 grid=1, dim3 block=1) 
+	complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid=1, dim3 block=1) 
 	: CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block) {
 		_grid_ = {128, 128, 8};
   	_block_ = {16, 16, 2};
@@ -31,13 +31,13 @@ public:
 	};
 	void set_value(int value) {_value_ = value;}
 
-	void cu_forward(bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data) {
-		if (!add) (*data)["host"]->zero();
-		kernel.launch((*model)["device"], (*data)["device"], _value_, d_labels);
+	void cu_forward(bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
+		if (!add) data->zero();
+		kernel.launch(model, data, _value_, d_labels);
 	};
-	void cu_adjoint(bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data) {
-		if (!add) (*model)["host"]->zero();
-		kernel.launch((*data)["device"], (*model)["device"], _value_, d_labels);
+	void cu_adjoint(bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data) {
+		if (!add) model->zero();
+		kernel.launch(data, model, _value_, d_labels);
 	};
 
 private:

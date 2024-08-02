@@ -11,56 +11,80 @@ class CudaOperator
 {
 public:
 	CudaOperator(const std::shared_ptr<hypercube>& domain, const std::shared_ptr<hypercube>& range, 
-								std::shared_ptr<ComplexVectorMap> model = nullptr, std::shared_ptr<ComplexVectorMap> data = nullptr, dim3 grid=1, dim3 block=1) 
+								complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid=1, dim3 block=1) 
 	: _grid_(grid), _block_(block) {
 		
 		setDomainRange(domain, range);
 		if (model == nullptr) {
 			model_alloc = true;
-			model_vec = make_complex_vector_map(domain, _grid_, _block_);
+			model_vec = make_complex_vector(domain, _grid_, _block_);
 		}
 		else model_vec = model;
 
 		if (data == nullptr) {
 			data_alloc = true;
-			data_vec = make_complex_vector_map(range, _grid_, _block_);
+			data_vec = make_complex_vector(range, _grid_, _block_);
 		}
 		else data_vec = data;
 	 };
 
 	virtual ~CudaOperator() {
 		if (model_alloc) {
-			CHECK_CUDA_ERROR(cudaFree((*model_vec)["device"]));
-			delete (*model_vec)["host"];
+			CHECK_CUDA_ERROR(cudaFree(model_vec));
 		}
 		if (data_alloc) {
-			CHECK_CUDA_ERROR(cudaFree((*data_vec)["device"]));
-			delete (*data_vec)["host"];
+			CHECK_CUDA_ERROR(cudaFree(data_vec));
 		}
 	};
 
 	void set_grid(dim3 grid) {_grid_ = grid;};
 	void set_block(dim3 block) {_block_ = block;};
 
-	virtual void cu_forward(bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data) = 0;
-	virtual void cu_adjoint(bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data) = 0;
+	virtual void cu_forward(bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data) = 0;
+	virtual void cu_adjoint(bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data) = 0;
 
 
 	void forward(bool add, std::shared_ptr<M>& model, std::shared_ptr<D>& data) {
-		if (!add) data->zero();
-		CHECK_CUDA_ERROR(cudaMemcpyAsync((*model_vec)["host"]->mat, model->getVals(), sizeof(cuFloatComplex) * getDomainSize(), cudaMemcpyHostToDevice));
-		if (add) CHECK_CUDA_ERROR(cudaMemcpyAsync((*data_vec)["host"]->mat, data->getVals(), sizeof(cuFloatComplex) * getDomainSize(), cudaMemcpyHostToDevice));
+		// pin the host memory
+		CHECK_CUDA_ERROR(cudaHostRegister(model->getVals(), getDomainSizeInBytes(), cudaHostRegisterDefault));
+		CHECK_CUDA_ERROR(cudaHostRegister(data->getVals(), getRangeSizeInBytes(), cudaHostRegisterDefault));
+
+		if (add) {
+			CHECK_CUDA_ERROR(cudaMemcpyAsync(data_vec->mat, data->getVals(), getRangeSizeInBytes(), cudaMemcpyHostToDevice));
+		}
+		else {
+			data->zero();
+		}
+		
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(model_vec->mat, model->getVals(), getDomainSizeInBytes(), cudaMemcpyHostToDevice));
 		cu_forward(add, model_vec, data_vec);
-		CHECK_CUDA_ERROR(cudaMemcpyAsync(data->getVals(), (*data_vec)["host"]->mat, sizeof(cuFloatComplex) * getRangeSize(), cudaMemcpyDeviceToHost));
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(data->getVals(), data_vec->mat, getRangeSizeInBytes(), cudaMemcpyDeviceToHost));
+
+		// unpin the memory
+		CHECK_CUDA_ERROR(cudaHostUnregister(model->getVals()));
+		CHECK_CUDA_ERROR(cudaHostUnregister(data->getVals()));
 	};
 
 	// this is host-to-host function
 	void adjoint(bool add, std::shared_ptr<M>& model, std::shared_ptr<D>& data) {
-		if (!add) model->zero();
-		CHECK_CUDA_ERROR(cudaMemcpyAsync((*data_vec)["host"]->mat,data->getVals(),sizeof(cuFloatComplex) * getRangeSize(), cudaMemcpyHostToDevice));
-		if (add) CHECK_CUDA_ERROR(cudaMemcpyAsync((*model_vec)["host"]->mat, model->getVals(), sizeof(cuFloatComplex) * getDomainSize(), cudaMemcpyHostToDevice));
+		// pin the host memory
+		CHECK_CUDA_ERROR(cudaHostRegister(model->getVals(), getDomainSizeInBytes(), cudaHostRegisterDefault));
+		CHECK_CUDA_ERROR(cudaHostRegister(data->getVals(), getRangeSizeInBytes(), cudaHostRegisterDefault));
+
+		if (add) {
+			CHECK_CUDA_ERROR(cudaMemcpyAsync(model_vec->mat, model->getVals(), getDomainSizeInBytes(), cudaMemcpyHostToDevice));
+		}
+		else {
+			model->zero();
+		}
+
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(data_vec->mat,data->getVals(), getRangeSizeInBytes(), cudaMemcpyHostToDevice));
 		cu_adjoint(add, model_vec, data_vec);
-		CHECK_CUDA_ERROR(cudaMemcpyAsync(model->getVals(),(*model_vec)["host"]->mat,sizeof(cuFloatComplex) * getDomainSize(), cudaMemcpyDeviceToHost));
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(model->getVals(),model_vec->mat, getDomainSizeInBytes(), cudaMemcpyDeviceToHost));
+
+		// unpin the memory
+		CHECK_CUDA_ERROR(cudaHostUnregister(model->getVals()));
+		CHECK_CUDA_ERROR(cudaHostUnregister(data->getVals()));
 	};
 
 	const std::shared_ptr<hypercube>& getDomain() const{
@@ -74,6 +98,12 @@ public:
 	}
 	const int getRangeSize() const{
 		return _range->getN123();
+	}
+	const size_t getDomainSizeInBytes() const{
+		return sizeof(cuFloatComplex)*_domain->getN123();
+	}
+	const size_t getRangeSizeInBytes() const{
+		return sizeof(cuFloatComplex)*_range->getN123();
 	}
 
 	void setDomainRange(const std::shared_ptr<hypercube>& domain, const std::shared_ptr<hypercube>& range) {
@@ -114,7 +144,7 @@ public:
 		std::cout << "*********************************" << '\n';
 };
 
-std::shared_ptr<ComplexVectorMap> model_vec, data_vec; 
+complex_vector *model_vec, *data_vec; 
 
 protected:
 	std::shared_ptr<hypercube> _domain;

@@ -10,7 +10,7 @@
 class OneStep : public CudaOperator<complex4DReg, complex4DReg>  {
 public:
   OneStep (const std::shared_ptr<hypercube>& domain, std::shared_ptr<complex4DReg> slow, std::shared_ptr<paramObj> par, std::shared_ptr<RefSampler> ref, 
-  std::shared_ptr<ComplexVectorMap> model = nullptr, std::shared_ptr<ComplexVectorMap> data = nullptr) :
+  complex_vector* model = nullptr, complex_vector* data = nullptr) :
   CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data) {
 
     _nref_ = par->getInt("nref",1);
@@ -25,9 +25,9 @@ public:
   };
 
   virtual ~OneStep() {
-    CHECK_CUDA_ERROR(cudaFree((*_wfld_ref)["device"]));
+    CHECK_CUDA_ERROR(cudaFree(_wfld_ref));
     // delete (*_wfld_ref)["host"];
-    CHECK_CUDA_ERROR(cudaFree((*model_k)["device"]));
+    CHECK_CUDA_ERROR(cudaFree(model_k));
     // delete (*model_k)["host"];
   };
 
@@ -38,8 +38,8 @@ public:
   int& get_depth() {return _iz_;};
 
 protected:
-  std::shared_ptr<ComplexVectorMap> _wfld_ref;
-  std::shared_ptr<ComplexVectorMap> model_k;
+  complex_vector* _wfld_ref;
+  complex_vector* model_k;
   int _nref_, _iz_;
   float _dz_;
   std::shared_ptr<RefSampler> _ref_;
@@ -52,19 +52,19 @@ protected:
 class PSPI : public OneStep {
 public:
   PSPI (const std::shared_ptr<hypercube>& domain, std::shared_ptr<complex4DReg> slow, std::shared_ptr<paramObj> par, std::shared_ptr<RefSampler> ref, 
-  std::shared_ptr<ComplexVectorMap> model = nullptr, std::shared_ptr<ComplexVectorMap> data = nullptr) :
+  complex_vector* model = nullptr, complex_vector* data = nullptr) :
   OneStep(domain, slow, par, ref, model, data) {};
 
-  void cu_forward (bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data);
-  void cu_adjoint (bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data);
+  void cu_forward (bool add, complex_vector* model, complex_vector* data);
+  void cu_adjoint (bool add, complex_vector* model, complex_vector* data);
 };
 
 class NSPS : public OneStep {
 public:
   NSPS (const std::shared_ptr<hypercube>& domain, std::shared_ptr<complex4DReg> slow, std::shared_ptr<paramObj> par, std::shared_ptr<RefSampler> ref, 
-  std::shared_ptr<ComplexVectorMap> model = nullptr, std::shared_ptr<ComplexVectorMap> data = nullptr) :
+  complex_vector* model = nullptr, complex_vector* data = nullptr) :
   OneStep(domain, slow, par, ref, model, data) {};
 
-  void cu_forward (bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data);
-  void cu_adjoint (bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data);
+  void cu_forward (bool add, complex_vector* model, complex_vector* data);
+  void cu_adjoint (bool add, complex_vector* model, complex_vector* data);
 };

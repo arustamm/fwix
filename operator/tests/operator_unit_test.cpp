@@ -44,9 +44,9 @@ TEST_F(FFTTest, check_complex_vector) {
   int *n = new int[ndim];
   float *d = new float[ndim];
   float *o = new float[ndim];
-  cudaMemcpy(n, (*cuFFT->model_vec)["host"]->n, sizeof(int)*ndim, cudaMemcpyDeviceToHost);
-  cudaMemcpy(d, (*cuFFT->model_vec)["host"]->d, sizeof(float)*ndim, cudaMemcpyDeviceToHost);
-  cudaMemcpy(o, (*cuFFT->model_vec)["host"]->o, sizeof(float)*ndim, cudaMemcpyDeviceToHost);
+  cudaMemcpy(n, cuFFT->model_vec->n, sizeof(int)*ndim, cudaMemcpyDeviceToHost);
+  cudaMemcpy(d, cuFFT->model_vec->d, sizeof(float)*ndim, cudaMemcpyDeviceToHost);
+  cudaMemcpy(o, cuFFT->model_vec->o, sizeof(float)*ndim, cudaMemcpyDeviceToHost);
   for (int i=0; i < ndim; ++i) {
     ASSERT_EQ(n[i], space4d->getHyper()->getAxis(i+1).n);
     ASSERT_EQ(d[i], space4d->getHyper()->getAxis(i+1).d);
@@ -60,8 +60,8 @@ TEST_F(FFTTest, check_complex_vector) {
 TEST_F(FFTTest, complex_zero) { 
   int n = space4d->getHyper()->getN123();
   cuFloatComplex *mat = new cuFloatComplex[n];
-  (*cuFFT->model_vec)["host"]->zero();
-  cudaMemcpy(mat, (*cuFFT->model_vec)["host"]->mat, sizeof(cuFloatComplex)*n, cudaMemcpyDeviceToHost);
+  cuFFT->model_vec->zero();
+  cudaMemcpy(mat, cuFFT->model_vec->mat, sizeof(cuFloatComplex)*n, cudaMemcpyDeviceToHost);
   for (int i=0; i < n; ++i) {
     ASSERT_EQ(mat[i].x, 0);
     ASSERT_EQ(mat[i].y, 0);

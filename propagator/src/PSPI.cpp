@@ -3,9 +3,9 @@
 
 using namespace SEP;
 
-void PSPI::cu_forward(bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data) {
+void PSPI::cu_forward(bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
 
-	  if(!add) (*data)["host"]->zero();
+	  if(!add) data->zero();
 
 		// pad->forward(model,model_pad,0);
 	  fft2d->cu_forward(0,model,model_k);
@@ -24,10 +24,10 @@ void PSPI::cu_forward(bool add, std::shared_ptr<ComplexVectorMap> model, std::sh
 
 }
 
-void PSPI::cu_adjoint(bool add, std::shared_ptr<ComplexVectorMap> model, std::shared_ptr<ComplexVectorMap> data) {
+void PSPI::cu_adjoint(bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data) {
 
-		if(!add)  (*model)["host"]->zero();
-		(*model_k)["host"]->zero();
+		if(!add)  model->zero();
+		model_k->zero();
 
 		for (int iref=0; iref < _nref_; ++iref) {
 
