@@ -10,6 +10,11 @@ void (*adj_kernel)(complex_vector* __restrict__, const complex_vector* __restric
 dim3 grid, dim3 block) : _grid_(grid), _block_(block), _fwd_kernel_(fwd_kernel), _adj_kernel_(adj_kernel) {};
 
 template <typename... Args>
+KernelLauncher<Args...>::KernelLauncher(
+void (*fwd_kernel)(const complex_vector* __restrict__, complex_vector* __restrict__, Args...), 
+dim3 grid, dim3 block) : _grid_(grid), _block_(block), _fwd_kernel_(fwd_kernel) {};
+
+template <typename... Args>
 KernelLauncher<Args...>::~KernelLauncher() {};
 
 template <typename... Args>

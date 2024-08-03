@@ -2,15 +2,19 @@
 include_directories(${TBB_INCLUDE_DIRS})
 # compiling cpp into objects
 
-set(TEST_SOURCES prop_unit_test.cpp pspi_benchmark.cpp)
-    foreach(src ${TEST_SOURCES})
-        string(REPLACE ".cpp" "" obj ${src})
-        add_executable(${obj} ${src})
-        target_link_libraries(${obj} CudaOperator CudaWEM
-																			genericCpp sepVector hypercube
-																			CUDA::cudart_static CUDA::cufft_static
-																			GTest::gtest_main GTest::gtest
-																			tbb benchmark)
-        add_test(NAME ${obj} COMMAND ${obj})
-    endforeach()
+set(TEST_SOURCES 
+prop_unit_test.cpp 
+pspi_benchmark.cpp
+)
+
+foreach(src ${TEST_SOURCES})
+    string(REPLACE ".cpp" "" obj ${src})
+    add_executable(${obj} ${src})
+    target_link_libraries(${obj} CudaOperator CudaWEM
+                                                                        genericCpp sepVector hypercube
+                                                                        CUDA::cudart_static CUDA::cufft_static
+                                                                        GTest::gtest_main GTest::gtest
+                                                                        tbb benchmark)
+    add_test(NAME ${obj} COMMAND ${obj})
+endforeach()
 

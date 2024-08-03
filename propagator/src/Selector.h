@@ -18,7 +18,7 @@ public:
 
 		_size_ = domain->getAxis(1).n * domain->getAxis(2).n * domain->getAxis(3).n;
 		CHECK_CUDA_ERROR(cudaMalloc((void **)&d_labels, sizeof(int)*_size_));
-		kernel = Selector_kernel(&select_forward, _grid_, _block_);
+		launcher = Selector_launcher(&select_forward, _grid_, _block_);
 	};
 	
 	~Selector() {
@@ -33,18 +33,18 @@ public:
 
 	void cu_forward(bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
 		if (!add) data->zero();
-		kernel.launch(model, data, _value_, d_labels);
+		launcher.run_fwd(model, data, _value_, d_labels);
 	};
 	void cu_adjoint(bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data) {
 		if (!add) model->zero();
-		kernel.launch(data, model, _value_, d_labels);
+		launcher.run_fwd(data, model, _value_, d_labels);
 	};
 
 private:
 	int _value_;
 	int _size_;
 	int *d_labels;
-	Selector_kernel kernel;
+	Selector_launcher launcher;
 
 };
 

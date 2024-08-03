@@ -2,7 +2,7 @@
 #include <CudaOperator.h>
 #include <complex4DReg.h>
 #include <cuda_runtime.h>
-#include <CudaKernel.cuh>
+#include <KernelLauncher.cuh>
 #include <cuComplex.h>
 #include <prop_kernels.cuh>
 
@@ -28,8 +28,7 @@ public:
     }
 
 private:
-    PS_kernel fwd_kernel;
-    PS_kernel adj_kernel;
+    PS_launcher launcher;
     cuFloatComplex* _sref_;
     float *d_w2, *d_kx, *d_ky;
     float _dz_;

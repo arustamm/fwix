@@ -17,8 +17,8 @@ public:
     _ref_ = ref;
     ps = std::make_unique<PhaseShift>(domain, slow->getHyper()->getAxis(4).d, par->getFloat("eps",0.04), model_vec, data_vec);
 
-    _wfld_ref = make_complex_vector_map(domain);
-    model_k = make_complex_vector_map(domain);
+    _wfld_ref = make_complex_vector(domain);
+    model_k = make_complex_vector(domain);
 
     fft2d = std::make_unique<cuFFT2d>(domain, model_vec, data_vec);
     select = std::make_unique<Selector>(domain, model_vec, data_vec);
@@ -26,9 +26,7 @@ public:
 
   virtual ~OneStep() {
     CHECK_CUDA_ERROR(cudaFree(_wfld_ref));
-    // delete (*_wfld_ref)["host"];
     CHECK_CUDA_ERROR(cudaFree(model_k));
-    // delete (*model_k)["host"];
   };
 
   void set_depth(int iz) {
@@ -55,8 +53,8 @@ public:
   complex_vector* model = nullptr, complex_vector* data = nullptr) :
   OneStep(domain, slow, par, ref, model, data) {};
 
-  void cu_forward (bool add, complex_vector* model, complex_vector* data);
-  void cu_adjoint (bool add, complex_vector* model, complex_vector* data);
+  void cu_forward (bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data);
+  void cu_adjoint (bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data);
 };
 
 class NSPS : public OneStep {
@@ -65,6 +63,6 @@ public:
   complex_vector* model = nullptr, complex_vector* data = nullptr) :
   OneStep(domain, slow, par, ref, model, data) {};
 
-  void cu_forward (bool add, complex_vector* model, complex_vector* data);
-  void cu_adjoint (bool add, complex_vector* model, complex_vector* data);
+  void cu_forward (bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data);
+  void cu_adjoint (bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data);
 };

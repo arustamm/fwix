@@ -7,7 +7,7 @@
 
 #include "PhaseShift.h"
 #include "RefSampler.h"
-#include "OneStep.h"
+// #include "OneStep.h"
 
 namespace py = pybind11;
 
@@ -52,43 +52,43 @@ py::class_<RefSampler, std::shared_ptr<RefSampler>>(clsOps, "RefSampler")
         );
     });
 
-py::class_<PSPI, std::shared_ptr<PSPI>>(clsOps, "PSPI")
-    .def(py::init<std::shared_ptr<hypercube>&, std::shared_ptr<complex4DReg>, std::shared_ptr<paramObj>, std::shared_ptr<RefSampler>>(),
-        "Initialize PSPI")
+// py::class_<PSPI, std::shared_ptr<PSPI>>(clsOps, "PSPI")
+//     .def(py::init<std::shared_ptr<hypercube>&, std::shared_ptr<complex4DReg>, std::shared_ptr<paramObj>, std::shared_ptr<RefSampler>>(),
+//         "Initialize PSPI")
 
-    .def("forward",
-        (void (PSPI::*)(bool, std::shared_ptr<complex4DReg>&, std::shared_ptr<complex4DReg>&)) &
-        PSPI::forward,
-        "Forward operator of PSPI")
+//     .def("forward",
+//         (void (PSPI::*)(bool, std::shared_ptr<complex4DReg>&, std::shared_ptr<complex4DReg>&)) &
+//         PSPI::forward,
+//         "Forward operator of PSPI")
 
-    .def("adjoint",
-        (void (PSPI::*)(bool, std::shared_ptr<complex4DReg>&, std::shared_ptr<complex4DReg>&)) &
-        PSPI::adjoint,
-        "Adjoint operator of PSPI")
+//     .def("adjoint",
+//         (void (PSPI::*)(bool, std::shared_ptr<complex4DReg>&, std::shared_ptr<complex4DReg>&)) &
+//         PSPI::adjoint,
+//         "Adjoint operator of PSPI")
 
-    .def("set_depth", 
-        (void (PSPI::*)(int)) &
-        PSPI::set_depth,
-        "Set depth of PSPI");
+//     .def("set_depth", 
+//         (void (PSPI::*)(int)) &
+//         PSPI::set_depth,
+//         "Set depth of PSPI");
 
-py::class_<NSPS, std::shared_ptr<NSPS>>(clsOps, "NSPS")
-    .def(py::init<std::shared_ptr<hypercube>&, std::shared_ptr<complex4DReg>, std::shared_ptr<paramObj>, std::shared_ptr<RefSampler>>(),
-        "Initialize NSPS")
+// py::class_<NSPS, std::shared_ptr<NSPS>>(clsOps, "NSPS")
+//     .def(py::init<std::shared_ptr<hypercube>&, std::shared_ptr<complex4DReg>, std::shared_ptr<paramObj>, std::shared_ptr<RefSampler>>(),
+//         "Initialize NSPS")
 
-    .def("forward",
-        (void (NSPS::*)(bool, std::shared_ptr<complex4DReg>&, std::shared_ptr<complex4DReg>&)) &
-        NSPS::forward,
-        "Forward operator of NSPS")
+//     .def("forward",
+//         (void (NSPS::*)(bool, std::shared_ptr<complex4DReg>&, std::shared_ptr<complex4DReg>&)) &
+//         NSPS::forward,
+//         "Forward operator of NSPS")
 
-    .def("adjoint",
-        (void (NSPS::*)(bool, std::shared_ptr<complex4DReg>&, std::shared_ptr<complex4DReg>&)) &
-        NSPS::adjoint,
-        "Adjoint operator of NSPS")
+//     .def("adjoint",
+//         (void (NSPS::*)(bool, std::shared_ptr<complex4DReg>&, std::shared_ptr<complex4DReg>&)) &
+//         NSPS::adjoint,
+//         "Adjoint operator of NSPS")
 
-    .def("set_depth", 
-        (void (NSPS::*)(int)) &
-        NSPS::set_depth,
-        "Set depth of NSPS");
+//     .def("set_depth", 
+//         (void (NSPS::*)(int)) &
+//         NSPS::set_depth,
+//         "Set depth of NSPS");
 
 }
 

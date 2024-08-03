@@ -1,11 +1,11 @@
 #include <complex_vector.h>
 #include <prop_kernels.cuh>
 #include <cuComplex.h>
-#include <CudaKernel.cuh>
-#include <CudaKernel.cu>
+#include <KernelLauncher.cuh>
+#include <KernelLauncher.cu>
 
-template class CudaKernel<int, int*>;
-__global__ void select_forward(complex_vector* __restrict__ model, complex_vector* __restrict__ data, int value, int* labels) {
+template class KernelLauncher<int, int*>;
+__global__ void select_forward(const complex_vector* __restrict__ model, complex_vector* __restrict__ data, int value, int* labels) {
 
   int NX = model->n[0];
   int NY = model->n[1];

@@ -12,6 +12,8 @@ public:
   KernelLauncher(void (*fwd_kernel)(const complex_vector* __restrict__, complex_vector* __restrict__, Args...), 
   void (*adj_kernel)(complex_vector* __restrict__, const complex_vector* __restrict__, Args...), 
   dim3 grid, dim3 block);
+  KernelLauncher(void (*fwd_kernel)(const complex_vector* __restrict__, complex_vector* __restrict__, Args...),
+  dim3 grid, dim3 block);
   ~KernelLauncher();
 
   void run_fwd(const complex_vector* __restrict__ model, complex_vector* __restrict__ data, Args... args);

@@ -1,10 +1,10 @@
 #include <complex_vector.h>
 #include <prop_kernels.cuh>
 #include <cuComplex.h>
-#include <CudaKernel.cuh>
-#include <CudaKernel.cu>
+#include <KernelLauncher.cuh>
+#include <KernelLauncher.cu>
 
-template class CudaKernel<float*, float*, float*, cuFloatComplex*, float, float>;
+template class KernelLauncher<float*, float*, float*, cuFloatComplex*, float, float>;
 
 __global__ void ps_forward(const complex_vector* __restrict__ model, complex_vector* __restrict__ data, float* w2, float* kx, float* ky, cuFloatComplex* slow_ref, float dz, float eps) {
 

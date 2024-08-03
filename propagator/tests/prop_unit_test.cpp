@@ -4,6 +4,7 @@
 #include <complex_vector.h>
 #include <cuda_runtime.h>
 #include  <RefSampler.h>
+#include <Selector.h>
 #include <OneStep.h>
 #include <jsonParamObj.h>
 

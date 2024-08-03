@@ -24,9 +24,9 @@ RUN git clone https://github.com/opencv/opencv.git /opt/opencv/src && cd /opt/op
     make -j8 install
 
 ARG sepflags="-O3 -ffast-math -DNDEBUG -DBOOST_DISABLE_ASSERTS -funroll-loops"
-# temp
-RUN git config --global http.sslVerify false
-# temp
+# # temp
+# RUN git config --global http.sslVerify false
+# # temp
 RUN git clone http://zapad.stanford.edu/SEP-external/sep-iolibs.git /opt/sep-io/src && \
     mkdir /opt/sep-io/build && \
     cd /opt/sep-io/src && git submodule update --init --recursive && \
