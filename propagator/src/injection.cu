@@ -28,6 +28,7 @@ __global__ void inj_forward(const complex_vector* __restrict__ model, complex_ve
 
   int jw = blockDim.x * gridDim.x;
   int js = blockDim.y * gridDim.y;
+  int ns = 0;
 
   for (int itrace=itrace0; itrace < NTRACE; itrace += jtrace) {
     int iy = (cy[itrace]-OY)/DY;
