@@ -13,4 +13,7 @@ typedef KernelLauncher<float*, float*, float*, cuFloatComplex*, float, float> PS
 // selector
 __global__ void select_forward(const complex_vector* __restrict__ model, complex_vector* __restrict__ data, int value, int* labels);
 typedef KernelLauncher<int, int*> Selector_launcher;
-  
+  // injection
+__global__ void inj_forward(const complex_vector* __restrict__ model, complex_vector* __restrict__ data, float* cx, float* cy);
+__global__ void inj_adjoint(complex_vector* __restrict__ model, const complex_vector* __restrict__ data, float* cx, float* cy);
+typedef KernelLauncher<float*, float*> Injection_launcher;

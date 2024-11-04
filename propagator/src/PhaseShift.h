@@ -17,14 +17,14 @@ public:
     void cu_adjoint (bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data);
 
     void set_slow(std::complex<float>* sref) {
-        CHECK_CUDA_ERROR(cudaMemcpy(_sref_, sref, _nw_*sizeof(std::complex<float>), cudaMemcpyHostToDevice));
+        CHECK_CUDA_ERROR(cudaMemcpyAsync(_sref_, sref, _nw_*sizeof(std::complex<float>), cudaMemcpyHostToDevice));
     }
 
     ~PhaseShift() {
-        cudaFree(d_w2);
-        cudaFree(d_kx);
-        cudaFree(d_ky);
-        cudaFree(_sref_);
+        CHECK_CUDA_ERROR(cudaFree(d_w2));
+        CHECK_CUDA_ERROR(cudaFree(d_kx));
+        CHECK_CUDA_ERROR(cudaFree(d_ky));
+        CHECK_CUDA_ERROR(cudaFree(_sref_));
     }
 
 private:

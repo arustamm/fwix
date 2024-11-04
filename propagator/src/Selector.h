@@ -27,7 +27,7 @@ public:
 
 	void set_labels(int* labels) {
 		// labels are 3D -- (x,y,w)
-		CHECK_CUDA_ERROR(cudaMemcpy(d_labels, labels, sizeof(int)*_size_, cudaMemcpyHostToDevice));
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(d_labels, labels, sizeof(int)*_size_, cudaMemcpyHostToDevice));
 	};
 	void set_value(int value) {_value_ = value;}
 
