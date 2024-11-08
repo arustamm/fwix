@@ -6,7 +6,10 @@
 #include  <RefSampler.h>
 #include <Selector.h>
 #include <OneStep.h>
+#include <Injection.h>
+
 #include <jsonParamObj.h>
+#include <random>
 
 class PS_Test : public testing::Test {
  protected:
@@ -125,6 +128,66 @@ TEST_F(PSPI_Test, fwd) {
 
 TEST_F(PSPI_Test, dotTest) { 
   pspi->dotTest();
+}
+
+class Injection_Test : public testing::Test {
+ protected:
+  void SetUp() override {
+    nx = 100;
+    auto ax1 = axis(nx, 0.f, 0.01f);
+    ny = 100;
+    auto ax2 = axis(ny, 0.f, 0.01f);
+    nw = 10;
+    auto ax3 = axis(nw, 1.f, 1.f);
+    ns = 5;
+    auto ax4 = axis(ns, 0.f, 1.f);
+    nz = 10;
+    auto ax5 = axis(nz, 0.f, 0.01f);
+
+    auto range = std::make_shared<hypercube>(ax1, ax2, ax3, ax4, ax5);
+    wfld = std::make_shared<complex5DReg>(range);
+
+    int ntrace = 20;
+    traces = std::make_shared<complex2DReg>(nw, ntrace);
+    auto domain = traces->getHyper();
+
+    std::vector<float> cx(ntrace);
+    std::vector<float> cy(ntrace);
+    std::vector<float> cz(ntrace);
+    std::vector<int> ids(ntrace);
+
+    // Create a random number generator
+    std::random_device rd;  // Obtain a random seed from the OS
+    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<> distrib_x(ax1.o + ax1.d, (ax1.n-2)*ax1.d);
+    std::uniform_real_distribution<> distrib_y(ax2.o + ax2.d, (ax2.n-2)*ax2.d);
+    std::uniform_real_distribution<> distrib_z(ax5.o + ax5.d, (ax5.n-2)*ax5.d);
+    std::uniform_real_distribution<> distrib_id(0, ns-1);
+
+    // Generate the random coordinates
+    for (int i = 0; i < ntrace; ++i) {
+      cx[i] = distrib_x(gen);
+      cy[i] = distrib_y(gen);
+      cz[i] = distrib_z(gen);
+      ids[i] = distrib_id(gen);
+    }
+    
+    injection = std::make_unique<Injection>(domain, range, cx, cy, cz, ids);
+  }
+
+  std::unique_ptr<Injection> injection;
+  int nx, ny, nz, nw, ns;
+  std::shared_ptr<complex5DReg> wfld;
+  std::shared_ptr<complex2DReg> traces;
+};
+
+TEST_F(Injection_Test, fwd) { 
+  for (int i=0; i < 3; ++i)
+    ASSERT_NO_THROW(injection->forward(false, traces, wfld));
+}
+
+TEST_F(Injection_Test, dotTest) { 
+  injection->dotTest();
 }
 
 int main(int argc, char **argv) {
