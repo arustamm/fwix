@@ -25,7 +25,9 @@ public:
   };
 
   virtual ~OneStep() {
+    _wfld_ref->~complex_vector();
     CHECK_CUDA_ERROR(cudaFree(_wfld_ref));
+    model_k->~complex_vector();
     CHECK_CUDA_ERROR(cudaFree(model_k));
   };
 

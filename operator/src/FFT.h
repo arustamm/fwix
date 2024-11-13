@@ -12,8 +12,9 @@ class cuFFT2d : public CudaOperator<complex4DReg, complex4DReg> {
 		cuFFT2d(const std::shared_ptr<hypercube>& domain, complex_vector* model = nullptr, complex_vector* data = nullptr);
 		
 		~cuFFT2d() {
+			temp->~complex_vector();
+			CHECK_CUDA_ERROR(cudaFree(temp));
 			cufftDestroy(plan);
-			cudaFree(temp);
 		};
 
 		// this is on-device functions

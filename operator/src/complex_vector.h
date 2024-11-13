@@ -43,19 +43,10 @@ typedef struct complex_vector
     // for kernels
     dim3 _grid_, _block_;
 
-    // complex_vector(const std::shared_ptr<hypercube>& hyper, dim3 grid=1, dim3 block=1);
-
     void set_grid_block(dim3 grid, dim3 block) {
       _grid_ = grid.x * grid.y * grid.z;
       _block_ = block.x * block.y * block.z;
     }
-
-    // complex_vector* to_device() {
-    //   complex_vector* d_vec;
-    //   CHECK_CUDA_ERROR(cudaMallocManaged(reinterpret_cast<void **>(&d_vec), sizeof(complex_vector)));
-    //   CHECK_CUDA_ERROR(cudaMemcpyAsync(d_vec, this, sizeof(complex_vector), cudaMemcpyHostToDevice));
-    //   return d_vec;
-    // }
 
     void zero() {
       CHECK_CUDA_ERROR(cudaMemset(mat, 0, sizeof(cuFloatComplex)*nelem));
@@ -63,31 +54,24 @@ typedef struct complex_vector
 
     void add(complex_vector* vec);
 
-    complex_vector* clone() {
-      complex_vector* vec;
-      CHECK_CUDA_ERROR(cudaMemcpyAsync(vec->n, n, sizeof(int)*ndim, cudaMemcpyDeviceToDevice));
-      CHECK_CUDA_ERROR(cudaMemcpyAsync(vec->d, d, sizeof(float)*ndim, cudaMemcpyDeviceToDevice));
-      CHECK_CUDA_ERROR(cudaMemcpyAsync(vec->o, o, sizeof(float)*ndim, cudaMemcpyDeviceToDevice));
-      CHECK_CUDA_ERROR(cudaMemcpyAsync(vec->mat, mat, sizeof(cuFloatComplex)*ndim, cudaMemcpyDeviceToDevice));
-      vec->nelem = nelem;
-      vec->ndim = ndim;
-      allocated = true;
-      return vec;
-    }
+    complex_vector* make_view();
+    // to slice the multi-d array along the last axis and return (ndim-1)-d array
+    void view_at(complex_vector* view, int index);
 
     ~complex_vector() {
       if (allocated) {
-          printf("d\n");
-          CHECK_CUDA_ERROR(cudaFree(mat));
-          CHECK_CUDA_ERROR(cudaFree(n)); 
-          CHECK_CUDA_ERROR(cudaFree(d));
-          CHECK_CUDA_ERROR(cudaFree(o));
-          allocated = false;
-        };
-    }
+        CHECK_CUDA_ERROR(cudaFree(mat));
+        allocated = false;
+      }
+      CHECK_CUDA_ERROR(cudaFree(n)); 
+      CHECK_CUDA_ERROR(cudaFree(d));
+      CHECK_CUDA_ERROR(cudaFree(o));
+    };
 } complex_vector;
 
 complex_vector* make_complex_vector(const std::shared_ptr<hypercube>& hyper, dim3 grid=1, dim3 block=1);
+// create the view (only slice through last axis)
+complex_vector* make_view(complex_vector* parent);
 
 
 

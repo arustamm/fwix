@@ -36,12 +36,12 @@ void cuFFT2d::cu_adjoint(bool add, complex_vector* __restrict__ model, const com
 };
 
 // this is on-device function
-void cuFFT2d::cu_forward(complex_vector* data) {
+void cuFFT2d::cu_forward(__restrict__ complex_vector* data) {
   cufftExecC2C(plan, data->mat, data->mat, CUFFT_FORWARD);
 };
 
 // this is on-device function
-void cuFFT2d::cu_adjoint(complex_vector* data) {
+void cuFFT2d::cu_adjoint(__restrict__ complex_vector* data) {
   cufftExecC2C(plan, data->mat, data->mat, CUFFT_INVERSE);
 };
 

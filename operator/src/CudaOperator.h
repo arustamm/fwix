@@ -30,10 +30,12 @@ public:
 
 	virtual ~CudaOperator() {
 		if (model_alloc) {
-			// delete model_vec;
+			model_vec->~complex_vector();
+			CHECK_CUDA_ERROR(cudaFree(model_vec));
 		}
 		if (data_alloc) {
-			// delete data_vec;
+			data_vec->~complex_vector();
+			CHECK_CUDA_ERROR(cudaFree(data_vec));
 		}
 	};
 

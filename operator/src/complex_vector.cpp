@@ -2,72 +2,61 @@
 #include <complex_vector.cuh>
 #include <iostream>
 
-// complex_vector::complex_vector(const std::shared_ptr<hypercube>& hyper, dim3 grid, dim3 block) {
-      
-//       set_grid_block(grid, block);
-
-//       nelem = hyper->getN123();
-//       ndim = hyper->getNdim();
-//       CHECK_CUDA_ERROR(cudaMalloc(reinterpret_cast<void **>(&n), sizeof(int) * ndim));
-//       CHECK_CUDA_ERROR(cudaMalloc(reinterpret_cast<void **>(&d), sizeof(float) * ndim));
-//       CHECK_CUDA_ERROR(cudaMalloc(reinterpret_cast<void **>(&o), sizeof(float) * ndim));
-//       CHECK_CUDA_ERROR(cudaMalloc(reinterpret_cast<void **>(&mat), sizeof(cuFloatComplex) * nelem));
-
-//       int* h_n = new int[ndim];
-//       float* h_d = new float[ndim];
-//       float* h_o = new float[ndim];
-//       for (int i=0; i < ndim; ++i) {
-//         h_n[i] = hyper->getAxis(i+1).n;
-//         h_d[i] = hyper->getAxis(i+1).d;
-//         h_o[i] = hyper->getAxis(i+1).o;
-//       }
-//       CHECK_CUDA_ERROR(cudaMemcpyAsync(n, h_n, sizeof(int)*ndim, cudaMemcpyHostToDevice));
-//       CHECK_CUDA_ERROR(cudaMemcpyAsync(d, h_d, sizeof(float)*ndim, cudaMemcpyHostToDevice));
-//       CHECK_CUDA_ERROR(cudaMemcpyAsync(o, h_o, sizeof(float)*ndim, cudaMemcpyHostToDevice));
-//       allocated = true;
-
-//       delete[] h_n;
-//       delete[] h_d;
-//       delete[] h_o;
-//     }
-
 complex_vector* make_complex_vector(const std::shared_ptr<hypercube>& hyper, dim3 grid, dim3 block) {
+  complex_vector* vec;
+  CHECK_CUDA_ERROR(cudaMallocManaged(reinterpret_cast<void **>(&vec), sizeof(complex_vector)));
 
-      complex_vector* vec;
-      CHECK_CUDA_ERROR(cudaMallocManaged(&vec, sizeof(complex_vector)));
+  vec->set_grid_block(grid, block);
 
-      vec->set_grid_block(grid, block);
+  int nelem = vec->nelem = hyper->getN123();
+  int ndim = vec->ndim = hyper->getNdim();
+  CHECK_CUDA_ERROR(cudaMallocManaged(reinterpret_cast<void **>(&vec->n), sizeof(int) * ndim));
+  CHECK_CUDA_ERROR(cudaMallocManaged(reinterpret_cast<void **>(&vec->d), sizeof(float) * ndim));
+  CHECK_CUDA_ERROR(cudaMallocManaged(reinterpret_cast<void **>(&vec->o), sizeof(float) * ndim));
+  CHECK_CUDA_ERROR(cudaMalloc(reinterpret_cast<void **>(&vec->mat), sizeof(cuFloatComplex) * nelem));
 
-      int nelem = vec->nelem = hyper->getN123();
-      int ndim = vec->ndim = hyper->getNdim();
-      CHECK_CUDA_ERROR(cudaMalloc(reinterpret_cast<void **>(&vec->n), sizeof(int) * ndim));
-      CHECK_CUDA_ERROR(cudaMalloc(reinterpret_cast<void **>(&vec->d), sizeof(float) * ndim));
-      CHECK_CUDA_ERROR(cudaMalloc(reinterpret_cast<void **>(&vec->o), sizeof(float) * ndim));
-      CHECK_CUDA_ERROR(cudaMalloc(reinterpret_cast<void **>(&vec->mat), sizeof(cuFloatComplex) * nelem));
+  for (int i=0; i < ndim; ++i) {
+    vec->n[i] = hyper->getAxis(i+1).n;
+    vec->d[i] = hyper->getAxis(i+1).d;
+    vec->o[i] = hyper->getAxis(i+1).o;
+  }
+  vec->allocated = true;
 
-      int* h_n = new int[ndim];
-      float* h_d = new float[ndim];
-      float* h_o = new float[ndim];
-      for (int i=0; i < ndim; ++i) {
-        h_n[i] = hyper->getAxis(i+1).n;
-        h_d[i] = hyper->getAxis(i+1).d;
-        h_o[i] = hyper->getAxis(i+1).o;
-      }
-      CHECK_CUDA_ERROR(cudaMemcpyAsync(vec->n, h_n, sizeof(int)*ndim, cudaMemcpyHostToDevice));
-      CHECK_CUDA_ERROR(cudaMemcpyAsync(vec->d, h_d, sizeof(float)*ndim, cudaMemcpyHostToDevice));
-      CHECK_CUDA_ERROR(cudaMemcpyAsync(vec->o, h_o, sizeof(float)*ndim, cudaMemcpyHostToDevice));
-      vec->allocated = true;
-
-      delete[] h_n;
-      delete[] h_d;
-      delete[] h_o;
-
-      return vec;
-}
-
+  return vec;
+};
 
 void complex_vector::add(complex_vector* vec){
   launch_add(this, vec, _grid_, _block_);
+}
+
+complex_vector*  complex_vector::make_view() {
+  complex_vector* vec;
+  CHECK_CUDA_ERROR(cudaMallocManaged(&vec, sizeof(complex_vector)));
+
+  vec->set_grid_block(_grid_, _block_);
+
+  // Calculate the size of the new vector
+  vec->ndim = this->ndim - 1;
+  vec->nelem = this->nelem / this->n[this->ndim - 1]; 
+  CHECK_CUDA_ERROR(cudaMallocManaged(reinterpret_cast<void **>(&vec->n), sizeof(int) * vec->ndim));
+  CHECK_CUDA_ERROR(cudaMallocManaged(reinterpret_cast<void **>(&vec->d), sizeof(float) * vec->ndim));
+  CHECK_CUDA_ERROR(cudaMallocManaged(reinterpret_cast<void **>(&vec->o), sizeof(float) * vec->ndim));
+  for (int i=0; i < vec->ndim; ++i) {
+    vec->n[i] = this->n[i];
+    vec->d[i] = this->d[i];
+    vec->o[i] = this->o[i];
+  }
+  
+  vec->allocated = false;
+
+  return vec;
+}
+
+void complex_vector::view_at(complex_vector* view, int index) {
+  if (view->allocated) throw std::runtime_error("The provided complex_vector is not a view!");
+  // Calculate the offset in the original data
+  int offset = index * view->nelem;
+  view->mat = this->mat + offset; 
 }
 
 
