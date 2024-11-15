@@ -23,8 +23,8 @@ public:
     CHECK_CUDA_ERROR(cudaFree(d_ids));
   };
 
-  void cu_forward (bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data);
-  void cu_adjoint (bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data);
+  void cu_forward (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
+  void cu_adjoint (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
 
   void set_coords(const std::vector<float>& cx, const std::vector<float>& cy, const std::vector<float>& cz, const std::vector<int>& ids) {
     CHECK_CUDA_ERROR(cudaMemcpyAsync(d_cx, cx.data(), sizeof(float)*ntrace, cudaMemcpyHostToDevice));

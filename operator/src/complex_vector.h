@@ -55,8 +55,11 @@ typedef struct complex_vector
     void add(complex_vector* vec);
 
     complex_vector* make_view();
+    const complex_vector* make_const_view();
+
     // to slice the multi-d array along the last axis and return (ndim-1)-d array
     void view_at(complex_vector* view, int index);
+    void view_at(const complex_vector* view, int index);
 
     ~complex_vector() {
       if (allocated) {

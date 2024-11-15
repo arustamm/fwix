@@ -32,8 +32,8 @@ class RefSampler:
 	
 
 class PSPI(Op.Operator):
-	def __init__(self, model, data, slow, par, ref):
-		self.cppMode = pyCudaWEM.PSPI(model.getHyper().cppMode, slow.cppMode, par.cppMode, ref.cppMode)
+	def __init__(self, model, data, slow, par):
+		self.cppMode = pyCudaWEM.PSPI(model.getHyper().cppMode, slow.cppMode, par.cppMode)
 		self.setDomainRange(model, data)
 
 	def forward(self,add,model,data):
@@ -47,8 +47,8 @@ class PSPI(Op.Operator):
 
 
 class NSPS(Op.Operator):
-	def __init__(self, model, data, slow, par, ref):
-		self.cppMode = pyCudaWEM.NSPS(model.getHyper().cppMode, slow.cppMode, par.cppMode, ref.cppMode)
+	def __init__(self, model, data, slow, par):
+		self.cppMode = pyCudaWEM.NSPS(model.getHyper().cppMode, slow.cppMode, par.cppMode)
 		self.setDomainRange(model, data)
 
 	def forward(self,add,model,data):
@@ -74,6 +74,20 @@ class Injection(Op.Operator):
 	def set_coords(self, cx, cy, cz, ids):
 		self.cppMode.set_coords(cx, cy, cz, ids)
 
+
+class Downward(Op.Operator):
+	def __init__(self, model, data, slow, par):
+		self.cppMode = pyCudaWEM.Downward(model.getHyper().cppMode, slow.cppMode, par.cppMode)
+		self.setDomainRange(model, data)
+
+	def forward(self,add,model,data):
+		self.cppMode.forward(add, model.cppMode, data.cppMode)
+
+	def adjoint(self,add,model,data):
+		self.cppMode.adjoint(add, model.cppMode, data.cppMode)
+
+	def set_depth(self, iz):
+		self.cppMode.set_depth(iz)
 
 	
 

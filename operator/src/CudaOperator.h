@@ -42,8 +42,8 @@ public:
 	void set_grid(dim3 grid) {_grid_ = grid;};
 	void set_block(dim3 block) {_block_ = block;};
 
-	virtual void cu_forward(bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data) = 0;
-	virtual void cu_adjoint(bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data) = 0;
+	virtual void cu_forward(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) = 0;
+	virtual void cu_adjoint(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) = 0;
 
 
 	void forward(bool add, std::shared_ptr<M>& model, std::shared_ptr<D>& data) {

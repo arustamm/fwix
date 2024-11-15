@@ -26,14 +26,13 @@ class PSPIBenchmark : public benchmark::Fixture {
     data = std::make_shared<complex4DReg>(hyper);
 
     auto slow4d = std::make_shared<complex4DReg>(nx, ny, nw, nz);
-    auto ref = std::make_shared<RefSampler>(slow4d, nref);
     slow4d->random();
 
     Json::Value root;
     root["nref"] = nref;
     auto par = std::make_shared<jsonParamObj>(root);
 
-    pspi = std::make_unique<PSPI>(hyper, slow4d, par, ref);
+    pspi = std::make_unique<PSPI>(hyper, slow4d, par);
     pspi->set_depth(5);
   }
   std::unique_ptr<PSPI> pspi;

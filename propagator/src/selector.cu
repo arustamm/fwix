@@ -5,7 +5,7 @@
 #include <KernelLauncher.cu>
 
 template class KernelLauncher<int, int*>;
-__global__ void select_forward(const complex_vector* __restrict__ model, complex_vector* __restrict__ data, int value, int* labels) {
+__global__ void select_forward(complex_vector* __restrict__ model, complex_vector* __restrict__ data, int value, int* labels) {
 
   int NX = model->n[0];
   int NY = model->n[1];

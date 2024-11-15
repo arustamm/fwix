@@ -52,11 +52,23 @@ complex_vector*  complex_vector::make_view() {
   return vec;
 }
 
+// Const version (cannot modify the object)
+const complex_vector* complex_vector::make_const_view() {
+  return const_cast<const complex_vector*>(this->make_view()); 
+}
+
 void complex_vector::view_at(complex_vector* view, int index) {
   if (view->allocated) throw std::runtime_error("The provided complex_vector is not a view!");
   // Calculate the offset in the original data
   int offset = index * view->nelem;
   view->mat = this->mat + offset; 
+}
+
+void complex_vector::view_at(const complex_vector* view, int index) {
+  if (view->allocated) throw std::runtime_error("The provided complex_vector is not a view!");
+  // Calculate the offset in the original data
+  int offset = index * view->nelem;
+  const_cast<complex_vector*>(view)->mat = this->mat + offset; 
 }
 
 

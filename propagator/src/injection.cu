@@ -6,7 +6,7 @@
 
 template class KernelLauncher<float*, float*, float*, int*>;
 
-__global__ void inj_forward(const complex_vector* __restrict__ model, complex_vector* __restrict__ data, 
+__global__ void inj_forward(complex_vector* __restrict__ model, complex_vector* __restrict__ data, 
   float* cx, float* cy, float* cz, int* ids) {
 
   int NX = data->n[0];
@@ -98,7 +98,7 @@ __global__ void inj_forward(const complex_vector* __restrict__ model, complex_ve
   }
 };
 
-__global__ void inj_adjoint(complex_vector* __restrict__ model, const complex_vector* __restrict__ data, 
+__global__ void inj_adjoint(complex_vector* __restrict__ model, complex_vector* __restrict__ data, 
   float* cx, float* cy, float* cz, int* ids) {
 
   int NX = data->n[0];

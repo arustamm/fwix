@@ -20,13 +20,13 @@ complex_vector* model, complex_vector* data, dim3 grid, dim3 block)
   CHECK_CUDA_ERROR(cudaMalloc((void**)&_sref_, _nw_ * sizeof(std::complex<float>)));
 };
 
-void PhaseShift::cu_forward (bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
+void PhaseShift::cu_forward (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
   if (!add) data->zero();
   launcher.run_fwd(model, data, d_w2, d_kx, d_ky, _sref_, _dz_, _eps_);
 };
 
 
-void PhaseShift::cu_adjoint (bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data) {
+void PhaseShift::cu_adjoint (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
   if (!add) model->zero();
   launcher.run_adj(model, data, d_w2, d_kx, d_ky, _sref_, _dz_, _eps_);
 }

@@ -31,11 +31,11 @@ public:
 	};
 	void set_value(int value) {_value_ = value;}
 
-	void cu_forward(bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
+	void cu_forward(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
 		if (!add) data->zero();
 		launcher.run_fwd(model, data, _value_, d_labels);
 	};
-	void cu_adjoint(bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data) {
+	void cu_adjoint(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
 		if (!add) model->zero();
 		launcher.run_fwd(data, model, _value_, d_labels);
 	};

@@ -3,7 +3,7 @@
 
 using namespace SEP;
 
-void PSPI::cu_forward(bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
+void PSPI::cu_forward(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
 
 	  if(!add) data->zero();
 
@@ -24,7 +24,7 @@ void PSPI::cu_forward(bool add, const complex_vector* __restrict__ model, comple
 
 }
 
-void PSPI::cu_adjoint(bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data) {
+void PSPI::cu_adjoint(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
 
 		if(!add)  model->zero();
 		model_k->zero();

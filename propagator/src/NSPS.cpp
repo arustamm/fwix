@@ -3,7 +3,7 @@
 
 using namespace SEP;
 
-void NSPS::cu_adjoint(bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data) {
+void NSPS::cu_adjoint(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
 
 	  if(!add) model->zero();
 
@@ -24,7 +24,7 @@ void NSPS::cu_adjoint(bool add, complex_vector* __restrict__ model, const comple
 
 }
 
-void NSPS::cu_forward(bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
+void NSPS::cu_forward(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
 
 		if(!add)  data->zero();
 		model_k->zero();

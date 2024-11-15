@@ -22,14 +22,14 @@ cuFFT2d::cuFFT2d(const std::shared_ptr<hypercube>& domain, complex_vector* model
 };
 
 // this is on-device function
-void cuFFT2d::cu_forward(bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
+void cuFFT2d::cu_forward(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
   if (!add) data->zero();
   cufftExecC2C(plan, model->mat, temp->mat, CUFFT_FORWARD);
   data->add(temp);
 };
 
 // this is on-device function
-void cuFFT2d::cu_adjoint(bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data) {
+void cuFFT2d::cu_adjoint(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
   if (!add) model->zero();
   cufftExecC2C(plan, data->mat, temp->mat, CUFFT_INVERSE);
   model->add(temp);

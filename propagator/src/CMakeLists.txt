@@ -20,6 +20,7 @@ RefSampler.cpp
 PSPI.cpp 
 NSPS.cpp
 Injection.cpp
+Downward.cpp
 )
 
 set(CPP_INC 
@@ -28,6 +29,7 @@ RefSampler.h
 Selector.h 
 OneStep.h
 Injection.h
+OneWay.h
 )
 # add_library(cpp_objects OBJECT ${CPP_SRC} ${CPP_INC})
 # set_property(TARGET cpp_objects PROPERTY CUDA_SEPARABLE_COMPILATION ON)

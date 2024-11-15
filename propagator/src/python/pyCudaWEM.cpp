@@ -9,6 +9,7 @@
 #include "RefSampler.h"
 #include "OneStep.h"
 #include "Injection.h"
+#include "OneWay.h"
 
 namespace py = pybind11;
 
@@ -54,7 +55,7 @@ py::class_<RefSampler, std::shared_ptr<RefSampler>>(clsOps, "RefSampler")
     });
 
 py::class_<PSPI, std::shared_ptr<PSPI>>(clsOps, "PSPI")
-    .def(py::init<std::shared_ptr<hypercube>&, std::shared_ptr<complex4DReg>, std::shared_ptr<paramObj>, std::shared_ptr<RefSampler>>(),
+    .def(py::init<std::shared_ptr<hypercube>&, std::shared_ptr<complex4DReg>, std::shared_ptr<paramObj>>(),
         "Initialize PSPI")
 
     .def("forward",
@@ -73,7 +74,7 @@ py::class_<PSPI, std::shared_ptr<PSPI>>(clsOps, "PSPI")
         "Set depth of PSPI");
 
 py::class_<NSPS, std::shared_ptr<NSPS>>(clsOps, "NSPS")
-    .def(py::init<std::shared_ptr<hypercube>&, std::shared_ptr<complex4DReg>, std::shared_ptr<paramObj>, std::shared_ptr<RefSampler>>(),
+    .def(py::init<std::shared_ptr<hypercube>&, std::shared_ptr<complex4DReg>, std::shared_ptr<paramObj>>(),
         "Initialize NSPS")
 
     .def("forward",
@@ -110,6 +111,20 @@ py::class_<Injection, std::shared_ptr<Injection>>(clsOps, "Injection")
         (void (Injection::*)(const std::vector<float>&, const std::vector<float>&, const std::vector<float>&, const std::vector<int>&)) &
         Injection::set_coords,
         "Set depth of Injection");
+
+py::class_<Downward, std::shared_ptr<Downward>>(clsOps, "Downward")
+    .def(py::init<std::shared_ptr<hypercube>&, std::shared_ptr<complex4DReg>&, std::shared_ptr<paramObj>&>(),
+        "Initialize Downward")
+
+    .def("forward",
+        (void (Downward::*)(bool, std::shared_ptr<complex5DReg>&, std::shared_ptr<complex5DReg>&)) &
+        Downward::forward,
+        "Forward operator of Downward")
+
+    .def("adjoint",
+        (void (Downward::*)(bool, std::shared_ptr<complex5DReg>&, std::shared_ptr<complex5DReg>&)) &
+        Downward::adjoint,
+        "Adjoint operator of Downward");
 
 
 }

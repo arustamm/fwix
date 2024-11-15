@@ -7,6 +7,7 @@
 #include <Selector.h>
 #include <OneStep.h>
 #include <Injection.h>
+#include <OneWay.h>
 
 #include <jsonParamObj.h>
 #include <random>
@@ -100,7 +101,6 @@ class PSPI_Test : public testing::Test {
     int nref = 3;
 
     auto slow4d = std::make_shared<complex4DReg>(nx, ny, nw, nz);
-    auto ref = std::make_shared<RefSampler>(slow4d, nref);
     slow4d->random();
 
     // create a vector of slowness values for each frequency
@@ -111,7 +111,7 @@ class PSPI_Test : public testing::Test {
     Json::Value root;
     root["nref"] = nref;
     auto par = std::make_shared<jsonParamObj>(root);
-    pspi = std::make_unique<PSPI>(domain, slow4d, par, ref);
+    pspi = std::make_unique<PSPI>(domain, slow4d, par);
     pspi->set_depth(5);
   }
 
@@ -188,6 +188,53 @@ TEST_F(Injection_Test, fwd) {
 
 TEST_F(Injection_Test, dotTest) { 
   injection->dotTest();
+}
+
+class Downward_Test : public testing::Test {
+ protected:
+  void SetUp() override {
+    nx = 100;
+    auto ax1 = axis(nx, 0.f, 0.01f);
+    ny = 100;
+    auto ax2 = axis(ny, 0.f, 0.01f);
+    nw = 10;
+    auto ax3 = axis(nw, 1.f, 1.f);
+    ns = 5;
+    auto ax4 = axis(ns, 0.f, 1.f);
+    nz = 10;
+    auto ax5 = axis(nz, 0.f, 0.01f);
+
+    auto domain = std::make_shared<hypercube>(ax1, ax2, ax3, ax4, ax5);
+    wfld1 = std::make_shared<complex5DReg>(domain);
+    wfld2 = std::make_shared<complex5DReg>(domain);
+
+    auto slow4d = std::make_shared<complex4DReg>(nx, ny, nw, nz);
+    slow4d->random();
+
+    Json::Value root;
+    root["nref"] = 3;
+    auto par = std::make_shared<jsonParamObj>(root);
+
+    down = std::make_unique<Downward>(domain, slow4d, par);
+  }
+
+  std::unique_ptr<Downward> down;
+  int nx, ny, nz, nw, ns;
+  std::shared_ptr<complex5DReg> wfld1, wfld2;
+};
+
+TEST_F(Downward_Test, fwd) { 
+  for (int i=0; i < 3; ++i)
+    ASSERT_NO_THROW(down->forward(false, wfld1, wfld2));
+}
+
+TEST_F(Downward_Test, adj) { 
+  for (int i=0; i < 3; ++i)
+    ASSERT_NO_THROW(down->adjoint(false, wfld1, wfld2));
+}
+
+TEST_F(Downward_Test, dotTest) { 
+  down->dotTest();
 }
 
 int main(int argc, char **argv) {

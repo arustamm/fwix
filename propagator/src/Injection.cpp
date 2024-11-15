@@ -26,12 +26,12 @@ complex_vector* model, complex_vector* data, dim3 grid, dim3 block)
 
 
   
-void Injection::cu_forward (bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
+void Injection::cu_forward (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
   if (!add) data->zero();
   launcher.run_fwd(model, data, d_cx, d_cy, d_cz, d_ids);
 
 };
-void Injection::cu_adjoint (bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data) {
+void Injection::cu_adjoint (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
   if (!add) model->zero();
   launcher.run_adj(model, data, d_cx, d_cy, d_cz, d_ids);
 };

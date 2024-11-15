@@ -13,8 +13,8 @@ public:
     PhaseShift(const std::shared_ptr<hypercube>& domain, float dz, float eps, 
     complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid=1, dim3 block=1);
 
-    void cu_forward (bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data);
-    void cu_adjoint (bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data);
+    void cu_forward (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
+    void cu_adjoint (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
 
     void set_slow(std::complex<float>* sref) {
         CHECK_CUDA_ERROR(cudaMemcpyAsync(_sref_, sref, _nw_*sizeof(std::complex<float>), cudaMemcpyHostToDevice));

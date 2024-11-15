@@ -18,8 +18,8 @@ class cuFFT2d : public CudaOperator<complex4DReg, complex4DReg> {
 		};
 
 		// this is on-device functions
-		void cu_forward(bool add, const complex_vector* __restrict__ model, complex_vector* __restrict__ data);
-		void cu_adjoint(bool add, complex_vector* __restrict__ model, const complex_vector* __restrict__ data);
+		void cu_forward(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
+		void cu_adjoint(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
 		void cu_forward(complex_vector* data);
 		void cu_adjoint(complex_vector* data);
 
