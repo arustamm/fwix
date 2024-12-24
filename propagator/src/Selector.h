@@ -13,8 +13,8 @@ public:
 	Selector(const std::shared_ptr<hypercube>& domain, 
 	complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid=1, dim3 block=1) 
 	: CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block) {
-		_grid_ = {128, 128, 8};
-  	_block_ = {16, 16, 2};
+		_grid_ = {32, 4, 4};
+  _block_ = {16, 16, 4};
 
 		_size_ = domain->getAxis(1).n * domain->getAxis(2).n * domain->getAxis(3).n;
 		CHECK_CUDA_ERROR(cudaMalloc((void **)&d_labels, sizeof(int)*_size_));

@@ -13,11 +13,16 @@ public:
     // create vector for views (does not acquire data)
     curr = model_vec->make_view();
     next = model_vec->make_view();
+
     ax = domain->getAxes();
     // hyper = [ns, nw, nx ,ny]
     auto hyper = std::make_shared<hypercube>(ax[0], ax[1], ax[2], ax[3]);
     // for now only support PSPI propagator
-    prop = std::make_unique<PSPI>(hyper, slow, par, curr, next);
+    _grid_ = {128, 128, 8};
+    _block_ = {16, 16, 2};
+    curr->set_grid_block(_grid_, _block_);
+    next->set_grid_block(_grid_, _block_);
+    prop = std::make_unique<PSPI>(hyper, slow, par, curr, next, _grid_, _block_);
 
   };
 
@@ -27,6 +32,12 @@ public:
     next->~complex_vector();
     CHECK_CUDA_ERROR(cudaFree(next));
   };
+
+  void set_wfld(complex_vector* wfld) {
+
+  };
+
+  void save_wfld(complex_vector* wfld) {};
 
 
 protected:

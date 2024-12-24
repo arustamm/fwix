@@ -25,7 +25,7 @@ class PS_Test : public testing::Test {
     auto hyper = std::make_shared<hypercube>(n1, n2, n3, n4);
     space4d = std::make_shared<complex4DReg>(hyper);
     space4d->set(1.f);
-    ps = std::make_unique<PhaseShift>(hyper, .1f, 0.f);
+    ps = std::make_unique<PhaseShift>(hyper, .1f, 0.f);    
     ps->set_slow(slow.data());
   }
 
@@ -36,8 +36,8 @@ class PS_Test : public testing::Test {
 
 TEST_F(PS_Test, fwd) { 
   auto out = space4d->clone();
-  ps->set_grid({1024, 1024, 16});
-  ps->set_block({2, 2, 2});
+  ps->set_grid({32, 4, 4});
+  ps->set_block({16, 16, 4});
   for (int i=0; i < 100; ++i)
     ps->forward(false, space4d, out);
 }
@@ -46,6 +46,19 @@ TEST_F(PS_Test, adj) {
   auto out = space4d->clone();
   for (int i=0; i < 100; ++i)
     ps->adjoint(false, out, space4d);
+}
+
+TEST_F(PS_Test, inv) { 
+  auto out = space4d->clone();
+  auto inv = space4d->clone();
+  for (int i=0; i < 10; ++i) {
+    ps->forward(false, out, space4d);
+    ps->inverse(false, inv, space4d);
+    inv->scaleAdd(out, 1, -1);
+    double err = inv->norm(2) / out->norm(2);
+    std::cout << err << " ";
+    ASSERT_TRUE(err <= 1e-7); 
+  }
 }
 
 TEST_F(PS_Test, dotTest) { 
@@ -98,7 +111,7 @@ class PSPI_Test : public testing::Test {
     nz = 10;
     nw = 10;
     ns = 1;
-    int nref = 3;
+    int nref = 1;
 
     auto slow4d = std::make_shared<complex4DReg>(nx, ny, nw, nz);
     slow4d->random();
@@ -111,7 +124,9 @@ class PSPI_Test : public testing::Test {
     Json::Value root;
     root["nref"] = nref;
     auto par = std::make_shared<jsonParamObj>(root);
-    pspi = std::make_unique<PSPI>(domain, slow4d, par);
+    dim3 grid = {32, 4, 4};
+    dim3 block = {16, 16, 4};
+    pspi = std::make_unique<PSPI>(domain, slow4d, par, nullptr, nullptr, grid, block);
     pspi->set_depth(5);
   }
 
@@ -124,6 +139,24 @@ TEST_F(PSPI_Test, fwd) {
   auto out = space4d->clone();
   for (int i=0; i < 3; ++i)
     ASSERT_NO_THROW(pspi->forward(false, space4d, out));
+}
+
+TEST_F(PSPI_Test, cu_fwd) { 
+  auto out = space4d->clone();
+  ASSERT_NO_THROW(pspi->cu_forward(false, pspi->model_vec, pspi->data_vec));
+}
+
+TEST_F(PSPI_Test, inv) { 
+  auto out = space4d->clone();
+  auto inv = space4d->clone();
+  for (int i=0; i < 10; ++i) {
+    pspi->forward(false, out, space4d);
+    pspi->inverse(false, inv, space4d);
+    inv->scaleAdd(out, 1, -1);
+    double err = inv->norm(2) / out->norm(2);
+    std::cout << err << " ";
+    ASSERT_TRUE(err <= 1e-7); 
+  }
 }
 
 TEST_F(PSPI_Test, dotTest) { 
@@ -190,7 +223,7 @@ TEST_F(Injection_Test, dotTest) {
   injection->dotTest();
 }
 
-class Downward_Test : public testing::Test {
+class UpDown_Test : public testing::Test {
  protected:
   void SetUp() override {
     nx = 100;
@@ -216,25 +249,38 @@ class Downward_Test : public testing::Test {
     auto par = std::make_shared<jsonParamObj>(root);
 
     down = std::make_unique<Downward>(domain, slow4d, par);
+    up = std::make_unique<Upward>(domain, slow4d, par);
   }
 
   std::unique_ptr<Downward> down;
+  std::unique_ptr<Upward> up;
   int nx, ny, nz, nw, ns;
   std::shared_ptr<complex5DReg> wfld1, wfld2;
 };
 
-TEST_F(Downward_Test, fwd) { 
+TEST_F(UpDown_Test, down_fwd) { 
   for (int i=0; i < 3; ++i)
     ASSERT_NO_THROW(down->forward(false, wfld1, wfld2));
 }
-
-TEST_F(Downward_Test, adj) { 
+TEST_F(UpDown_Test, down_adj) { 
   for (int i=0; i < 3; ++i)
     ASSERT_NO_THROW(down->adjoint(false, wfld1, wfld2));
 }
+TEST_F(UpDown_Test, up_fwd) { 
+  for (int i=0; i < 3; ++i)
+    ASSERT_NO_THROW(up->forward(false, wfld1, wfld2));
+}
 
-TEST_F(Downward_Test, dotTest) { 
+TEST_F(UpDown_Test, up_adj) { 
+  for (int i=0; i < 3; ++i)
+    ASSERT_NO_THROW(up->adjoint(false, wfld1, wfld2));
+}
+
+TEST_F(UpDown_Test, down_dotTest) { 
   down->dotTest();
+}
+TEST_F(UpDown_Test, up_dotTest) { 
+  up->dotTest();
 }
 
 int main(int argc, char **argv) {

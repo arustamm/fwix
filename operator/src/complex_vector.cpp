@@ -25,6 +25,29 @@ complex_vector* make_complex_vector(const std::shared_ptr<hypercube>& hyper, dim
   return vec;
 };
 
+complex_vector* complex_vector::cloneSpace() {
+  complex_vector* vec;
+  CHECK_CUDA_ERROR(cudaMallocManaged(reinterpret_cast<void **>(&vec), sizeof(complex_vector)));
+
+  vec->set_grid_block(this->_grid_, this->_block_);
+
+  int nelem = vec->nelem = this->nelem;
+  int ndim = vec->ndim = this->ndim;
+  CHECK_CUDA_ERROR(cudaMallocManaged(reinterpret_cast<void **>(&vec->n), sizeof(int) * ndim));
+  CHECK_CUDA_ERROR(cudaMallocManaged(reinterpret_cast<void **>(&vec->d), sizeof(float) * ndim));
+  CHECK_CUDA_ERROR(cudaMallocManaged(reinterpret_cast<void **>(&vec->o), sizeof(float) * ndim));
+  CHECK_CUDA_ERROR(cudaMalloc(reinterpret_cast<void **>(&vec->mat), sizeof(cuFloatComplex) * nelem));
+
+  for (int i=0; i < ndim; ++i) {
+    vec->n[i] = this->n[i];
+    vec->d[i] = this->d[i];
+    vec->o[i] = this->o[i];
+  }
+  vec->allocated = true;
+
+  return vec;
+};
+
 void complex_vector::add(complex_vector* vec){
   launch_add(this, vec, _grid_, _block_);
 }

@@ -54,43 +54,43 @@ private:
   fftwf_complex *_model, *_data;
 };
 
-// class cpuFFTBenchmark : public benchmark::Fixture {
-//  protected:
-//   void SetUp(::benchmark::State& state) override {
-//     int n1 = state.range(3);
-//     int n2 = state.range(2);
-//     int n3 = state.range(1);
-//     int n4 = state.range(0);
-//     auto hyper = std::make_shared<hypercube>(n1, n2, n3, n4);
-//     model = std::make_shared<complex4DReg>(hyper);
-//     data = std::make_shared<complex4DReg>(hyper);
-//     model->set(1.f);
-//     FFT = std::make_unique<FFT2d>(hyper, hyper);
-//   }
-//   std::unique_ptr<FFT2d> FFT;
-//   std::shared_ptr<complex4DReg> model;
-//   std::shared_ptr<complex4DReg> data;
-//   int n1, n2, n3, n4;
-// };
+class cpuFFTBenchmark : public benchmark::Fixture {
+ protected:
+  void SetUp(::benchmark::State& state) override {
+    int n1 = state.range(3);
+    int n2 = state.range(2);
+    int n3 = state.range(1);
+    int n4 = state.range(0);
+    auto hyper = std::make_shared<hypercube>(n1, n2, n3, n4);
+    model = std::make_shared<complex4DReg>(hyper);
+    data = std::make_shared<complex4DReg>(hyper);
+    model->set(1.f);
+    FFT = std::make_unique<FFT2d>(hyper, hyper);
+  }
+  std::unique_ptr<FFT2d> FFT;
+  std::shared_ptr<complex4DReg> model;
+  std::shared_ptr<complex4DReg> data;
+  int n1, n2, n3, n4;
+};
 
-// BENCHMARK_DEFINE_F(cpuFFTBenchmark, forward_host)(benchmark::State& state){
-//   for (auto _ : state){
-//     auto start = std::chrono::high_resolution_clock::now();
-//     FFT->forward(false, model, data);
-//     auto end = std::chrono::high_resolution_clock::now();
-//     auto elapsed_seconds =
-//       std::chrono::duration_cast<std::chrono::duration<double>>(
-//         end - start);
-//     state.SetIterationTime(elapsed_seconds.count());
-//   }
+BENCHMARK_DEFINE_F(cpuFFTBenchmark, forward_host)(benchmark::State& state){
+  for (auto _ : state){
+    auto start = std::chrono::high_resolution_clock::now();
+    FFT->forward(false, model, data);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed_seconds =
+      std::chrono::duration_cast<std::chrono::duration<double>>(
+        end - start);
+    state.SetIterationTime(elapsed_seconds.count());
+  }
     
-// };
-// BENCHMARK_REGISTER_F(cpuFFTBenchmark, forward_host)
-// -> Args({1, 1, 1000, 1000}) 
-// -> Args({1, 10, 1000, 1000}) 
-// -> Args({1, 100, 1000, 1000}) 
-// -> Iterations(10)
-// ->UseManualTime();
+};
+BENCHMARK_REGISTER_F(cpuFFTBenchmark, forward_host)
+-> Args({1, 1, 1000, 1000}) 
+-> Args({1, 10, 1000, 1000}) 
+-> Args({1, 100, 1000, 1000}) 
+-> Iterations(10)
+->UseManualTime();
 
 
 class FFTBenchmark : public benchmark::Fixture {
@@ -113,23 +113,23 @@ class FFTBenchmark : public benchmark::Fixture {
 };
 
 
-// BENCHMARK_DEFINE_F(FFTBenchmark, forward_host)(benchmark::State& state){
-//   for (auto _ : state) {
-//     auto start = std::chrono::high_resolution_clock::now();
-//     cuFFT->forward(false, model, data);
-//     auto end = std::chrono::high_resolution_clock::now();
-//     auto elapsed_seconds =
-//       std::chrono::duration_cast<std::chrono::duration<double>>(
-//         end - start);
-//     state.SetIterationTime(elapsed_seconds.count());
-//   }
-// };
-// BENCHMARK_REGISTER_F(FFTBenchmark, forward_host)
-// -> Args({1, 1, 1000, 1000}) 
-// -> Args({1, 10, 1000, 1000}) 
-// -> Args({1, 100, 1000, 1000}) 
-// -> Iterations(10)
-// -> UseManualTime();
+BENCHMARK_DEFINE_F(FFTBenchmark, forward_host)(benchmark::State& state){
+  for (auto _ : state) {
+    auto start = std::chrono::high_resolution_clock::now();
+    cuFFT->forward(false, model, data);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed_seconds =
+      std::chrono::duration_cast<std::chrono::duration<double>>(
+        end - start);
+    state.SetIterationTime(elapsed_seconds.count());
+  }
+};
+BENCHMARK_REGISTER_F(FFTBenchmark, forward_host)
+-> Args({1, 1, 1000, 1000}) 
+-> Args({1, 10, 1000, 1000}) 
+-> Args({1, 100, 1000, 1000}) 
+-> Iterations(10)
+-> UseManualTime();
 
 BENCHMARK_DEFINE_F(FFTBenchmark, forward_device)(benchmark::State& state){
   for (auto _ : state) {

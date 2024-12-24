@@ -9,6 +9,8 @@ __global__ void ps_forward(complex_vector* __restrict__ model, complex_vector* _
   float* w2, float* kx, float* ky, cuFloatComplex* slow_ref, float dz, float eps);
 __global__ void ps_adjoint(complex_vector* __restrict__ model, complex_vector* __restrict__ data, 
   float* w2, float* kx, float* ky, cuFloatComplex* slow_ref, float dz, float eps);
+  __global__ void ps_inverse(complex_vector* __restrict__ model, complex_vector* __restrict__ data, 
+    float* w2, float* kx, float* ky, cuFloatComplex* slow_ref, float dz, float eps);
 typedef KernelLauncher<float*, float*, float*, cuFloatComplex*, float, float> PS_launcher;
 // selector
 __global__ void select_forward(complex_vector* __restrict__ model, complex_vector* __restrict__ data, int value, int* labels);

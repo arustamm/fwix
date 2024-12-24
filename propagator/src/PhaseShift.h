@@ -15,10 +15,13 @@ public:
 
     void cu_forward (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
     void cu_adjoint (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
+    void cu_inverse (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
 
     void set_slow(std::complex<float>* sref) {
         CHECK_CUDA_ERROR(cudaMemcpyAsync(_sref_, sref, _nw_*sizeof(std::complex<float>), cudaMemcpyHostToDevice));
     }
+
+    virtual void set_grid_block(dim3 grid, dim3 block);
 
     ~PhaseShift() {
         CHECK_CUDA_ERROR(cudaFree(d_w2));
@@ -27,8 +30,9 @@ public:
         CHECK_CUDA_ERROR(cudaFree(_sref_));
     }
 
-private:
+protected:
     PS_launcher launcher;
+    PS_launcher launcher_inv;
     cuFloatComplex* _sref_;
     float *d_w2, *d_kx, *d_ky;
     float _dz_;

@@ -86,8 +86,26 @@ class Downward(Op.Operator):
 	def adjoint(self,add,model,data):
 		self.cppMode.adjoint(add, model.cppMode, data.cppMode)
 
+	def forward(self,data):
+		self.cppMode.forward(data.cppMode)
+
+	def adjoint(self,model):
+		self.cppMode.adjoint(model.cppMode)
+
 	def set_depth(self, iz):
 		self.cppMode.set_depth(iz)
 
-	
+class Upward(Op.Operator):
+	def __init__(self, model, data, slow, par):
+		self.cppMode = pyCudaWEM.Upward(model.getHyper().cppMode, slow.cppMode, par.cppMode)
+		self.setDomainRange(model, data)
+
+	def forward(self,add,model,data):
+		self.cppMode.forward(add, model.cppMode, data.cppMode)
+
+	def adjoint(self,add,model,data):
+		self.cppMode.adjoint(add, model.cppMode, data.cppMode)
+
+	def set_depth(self, iz):
+		self.cppMode.set_depth(iz)
 

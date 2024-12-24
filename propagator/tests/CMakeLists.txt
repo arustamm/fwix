@@ -5,6 +5,7 @@ include_directories(${TBB_INCLUDE_DIRS})
 set(TEST_SOURCES 
 prop_unit_test.cpp 
 pspi_benchmark.cpp
+prop_benchmark.cpp
 )
 
 foreach(src ${TEST_SOURCES})

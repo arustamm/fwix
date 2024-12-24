@@ -52,6 +52,8 @@ typedef struct complex_vector
       CHECK_CUDA_ERROR(cudaMemset(mat, 0, sizeof(cuFloatComplex)*nelem));
     }
 
+    complex_vector* cloneSpace();
+
     void add(complex_vector* vec);
 
     complex_vector* make_view();

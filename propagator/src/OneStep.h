@@ -10,15 +10,16 @@
 class OneStep : public CudaOperator<complex4DReg, complex4DReg>  {
 public:
   OneStep (const std::shared_ptr<hypercube>& domain, std::shared_ptr<complex4DReg> slow, std::shared_ptr<paramObj> par, 
-  complex_vector* model = nullptr, complex_vector* data = nullptr) :
-  CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data) {
+  complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid = 1, dim3 block = 1) :
+  CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block) {
 
     _nref_ = par->getInt("nref",1);
     _ref_ = std::make_unique<RefSampler>(slow, _nref_);
     ps = std::make_unique<PhaseShift>(domain, slow->getHyper()->getAxis(4).d, par->getFloat("eps",0.04), model_vec, data_vec);
 
-    _wfld_ref = make_complex_vector(domain);
-    model_k = make_complex_vector(domain);
+    _wfld_ref = model_vec->cloneSpace();
+
+    model_k = model_vec->cloneSpace();
 
     fft2d = std::make_unique<cuFFT2d>(domain, model_vec, data_vec);
     select = std::make_unique<Selector>(domain, model_vec, data_vec);
@@ -52,19 +53,21 @@ protected:
 class PSPI : public OneStep {
 public:
   PSPI (const std::shared_ptr<hypercube>& domain, std::shared_ptr<complex4DReg> slow, std::shared_ptr<paramObj> par,
-  complex_vector* model = nullptr, complex_vector* data = nullptr) :
-  OneStep(domain, slow, par, model, data) {};
+  complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid = 1, dim3 block = 1) :
+  OneStep(domain, slow, par, model, data, grid, block) {};
 
   void cu_forward (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
   void cu_adjoint (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
+  void cu_inverse (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
 };
 
 class NSPS : public OneStep {
 public:
   NSPS (const std::shared_ptr<hypercube>& domain, std::shared_ptr<complex4DReg> slow, std::shared_ptr<paramObj> par,
-  complex_vector* model = nullptr, complex_vector* data = nullptr) :
-  OneStep(domain, slow, par, model, data) {};
+  complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid = 1, dim3 block = 1) :
+  OneStep(domain, slow, par, model, data, grid, block) {};
 
   void cu_forward (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
   void cu_adjoint (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
+  void cu_inverse (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
 };

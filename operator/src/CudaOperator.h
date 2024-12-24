@@ -11,7 +11,9 @@ class CudaOperator
 {
 public:
 	CudaOperator(const std::shared_ptr<hypercube>& domain, const std::shared_ptr<hypercube>& range, 
-								complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid=1, dim3 block=1) 
+								complex_vector* model = nullptr, complex_vector* data = nullptr, 
+								// std::shared_ptr<paramObj> launch_param
+								dim3 grid=1, dim3 block=1) 
 	: _grid_(grid), _block_(block) {
 		
 		setDomainRange(domain, range);
@@ -26,6 +28,11 @@ public:
 			data_vec = make_complex_vector(range, _grid_, _block_);
 		}
 		else data_vec = data;
+
+		// for now only batch the range (data) vector
+		batch_size.resize(chunks.size())
+		set_chunks(1);
+		
 	 };
 
 	virtual ~CudaOperator() {
@@ -44,6 +51,29 @@ public:
 
 	virtual void cu_forward(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) = 0;
 	virtual void cu_adjoint(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) = 0;
+	virtual void cu_inverse(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
+		throw std::runtime_error("Function not implemented in the derived class."); 
+	};
+
+	void set_chunks(int& chunk) {
+		int base_chunk_size = getRange()->getNdim() / chunk;
+		for (int& b : batch_size) 
+			b = base_chunk_size;
+
+		int remainder = getRange()->getNdim() % chunk;
+		// Distribute the remainder
+		for (int i = 0; i < remainder; ++i) 
+			batch_size[i]++;
+	}
+
+	void set_chunks(vector<int>& chunks) {
+		if (batch.size() != getRange()->getNdim()) 
+			throw std::runtime_error("Must provide number of batches along each dimensions.");
+
+		int base_chunk_size = number / N;  // Integer division in C++
+		int remainder = number % N;
+		std::vector<int> chunks(N, base_chunk_size); // Initialize with base size
+	}
 
 
 	void forward(bool add, std::shared_ptr<M>& model, std::shared_ptr<D>& data) {
@@ -51,16 +81,23 @@ public:
 		CHECK_CUDA_ERROR(cudaHostRegister(model->getVals(), getDomainSizeInBytes(), cudaHostRegisterDefault));
 		CHECK_CUDA_ERROR(cudaHostRegister(data->getVals(), getRangeSizeInBytes(), cudaHostRegisterDefault));
 
-		if (add) {
-			CHECK_CUDA_ERROR(cudaMemcpyAsync(data_vec->mat, data->getVals(), getRangeSizeInBytes(), cudaMemcpyHostToDevice));
+		for (int i=0; i < batch_size.size(); ++i) {
+			auto batch_size = get_batch_size(i);
+			auto batch_data = data->getVals() + i * batch_size;
+
+			if (add) {
+				CHECK_CUDA_ERROR(cudaMemcpyAsync(data_vec->mat, data->getVals(), getRangeSizeInBytes(), cudaMemcpyHostToDevice, stream));
+			}
+			else {
+				data->zero();
+			}
+			
+			CHECK_CUDA_ERROR(cudaMemcpyAsync(model_vec->mat, model->getVals(), getDomainSizeInBytes(), cudaMemcpyHostToDevice, stream[i]));
+			cu_forward(add, model_vec, data_vec, stream[i]);
+			CHECK_CUDA_ERROR(cudaMemcpyAsync(data->getVals(), data_vec->mat, getRangeSizeInBytes(), cudaMemcpyDeviceToHost, stream[i]));
 		}
-		else {
-			data->zero();
-		}
+
 		
-		CHECK_CUDA_ERROR(cudaMemcpyAsync(model_vec->mat, model->getVals(), getDomainSizeInBytes(), cudaMemcpyHostToDevice));
-		cu_forward(add, model_vec, data_vec);
-		CHECK_CUDA_ERROR(cudaMemcpyAsync(data->getVals(), data_vec->mat, getRangeSizeInBytes(), cudaMemcpyDeviceToHost));
 
 		// unpin the memory
 		CHECK_CUDA_ERROR(cudaHostUnregister(model->getVals()));
@@ -87,6 +124,53 @@ public:
 		// unpin the memory
 		CHECK_CUDA_ERROR(cudaHostUnregister(model->getVals()));
 		CHECK_CUDA_ERROR(cudaHostUnregister(data->getVals()));
+	};
+
+	// this is host-to-host function
+	void inverse(bool add, std::shared_ptr<M>& model, std::shared_ptr<D>& data) {
+		// pin the host memory
+		CHECK_CUDA_ERROR(cudaHostRegister(model->getVals(), getDomainSizeInBytes(), cudaHostRegisterDefault));
+		CHECK_CUDA_ERROR(cudaHostRegister(data->getVals(), getRangeSizeInBytes(), cudaHostRegisterDefault));
+
+		if (add) {
+			CHECK_CUDA_ERROR(cudaMemcpyAsync(model_vec->mat, model->getVals(), getDomainSizeInBytes(), cudaMemcpyHostToDevice));
+		}
+		else {
+			model->zero();
+		}
+
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(data_vec->mat,data->getVals(), getRangeSizeInBytes(), cudaMemcpyHostToDevice));
+		cu_inverse(add, model_vec, data_vec);
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(model->getVals(),model_vec->mat, getDomainSizeInBytes(), cudaMemcpyDeviceToHost));
+
+		// unpin the memory
+		CHECK_CUDA_ERROR(cudaHostUnregister(model->getVals()));
+		CHECK_CUDA_ERROR(cudaHostUnregister(data->getVals()));
+	};
+
+	void forward(std::shared_ptr<D>& data) {
+		// pin the host memory
+		CHECK_CUDA_ERROR(cudaHostRegister(data->getVals(), getRangeSizeInBytes(), cudaHostRegisterDefault));
+		
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(data_vec->mat, data->getVals(), getRangeSizeInBytes(), cudaMemcpyHostToDevice));
+		cu_forward(true, data_vec, data_vec);
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(data->getVals(), data_vec->mat, getRangeSizeInBytes(), cudaMemcpyDeviceToHost));
+
+		// unpin the memory
+		CHECK_CUDA_ERROR(cudaHostUnregister(data->getVals()));
+	};
+
+	// this is host-to-host function
+	void adjoint(std::shared_ptr<M>& model) {
+		// pin the host memory
+		CHECK_CUDA_ERROR(cudaHostRegister(model->getVals(), getDomainSizeInBytes(), cudaHostRegisterDefault));
+		
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(model_vec->mat, model->getVals(), getDomainSizeInBytes(), cudaMemcpyHostToDevice));
+		cu_adjoint(true, model_vec, model_vec);
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(model->getVals(), model_vec->mat, getDomainSizeInBytes(), cudaMemcpyDeviceToHost));
+
+		// unpin the memory
+		CHECK_CUDA_ERROR(cudaHostUnregister(model->getVals()));
 	};
 
 	const std::shared_ptr<hypercube>& getDomain() const{
@@ -153,6 +237,7 @@ protected:
 	std::shared_ptr<hypercube> _range;
 	dim3 _grid_, _block_;
 	bool model_alloc = false, data_alloc = false;
+	vector<int> batch_size;
 	
 };
 

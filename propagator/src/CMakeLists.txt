@@ -20,7 +20,7 @@ RefSampler.cpp
 PSPI.cpp 
 NSPS.cpp
 Injection.cpp
-Downward.cpp
+OneWay.cpp
 )
 
 set(CPP_INC 
