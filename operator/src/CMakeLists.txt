@@ -8,7 +8,7 @@ set(CU_INC fft_callback.cuh complex_vector.cuh)
 
 # compiling cpp into objects
 set(CPP_SRC complex_vector.cpp FFT.cpp)
-set(CPP_INC complex_vector.h CudaOperator.h FFT.h)
+set(CPP_INC StreamingOperator.h complex_vector.h CudaOperator.h FFT.h)
 # add_library(cpp_objects OBJECT ${CPP_SRC} ${CPP_INC})
 # set_property(TARGET cpp_objects PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 

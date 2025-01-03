@@ -11,14 +11,15 @@ using namespace SEP;
 class PhaseShift :  public CudaOperator<complex4DReg, complex4DReg> {
 public:
     PhaseShift(const std::shared_ptr<hypercube>& domain, float dz, float eps, 
-    complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid=1, dim3 block=1);
+    complex_vector* model = nullptr, complex_vector* data = nullptr, 
+    dim3 grid=1, dim3 block=1, cudaStream_t stream = 0);
 
     void cu_forward (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
     void cu_adjoint (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
     void cu_inverse (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
 
     void set_slow(std::complex<float>* sref) {
-        CHECK_CUDA_ERROR(cudaMemcpyAsync(_sref_, sref, _nw_*sizeof(std::complex<float>), cudaMemcpyHostToDevice));
+        CHECK_CUDA_ERROR(cudaMemcpyAsync(_sref_, sref, _nw_*sizeof(std::complex<float>), cudaMemcpyHostToDevice, _stream_));
     }
 
     virtual void set_grid_block(dim3 grid, dim3 block);
@@ -48,7 +49,7 @@ protected:
             h_k[ik] = ik*dk;
         for (int ik=1; ik<h_k.size()/2; ik++) 
             h_k[ax.n-ik] = -h_k[ik];
-        CHECK_CUDA_ERROR(cudaMemcpy(k, h_k.data(), sizeof(float)*ax.n, cudaMemcpyHostToDevice));
+        CHECK_CUDA_ERROR(cudaMemcpyAsync(k, h_k.data(), sizeof(float)*ax.n, cudaMemcpyHostToDevice, _stream_));
         return k;
     }
 
@@ -61,7 +62,7 @@ protected:
             f = 2*M_PI*f;
             h_w[i] = f*f;
         }
-        CHECK_CUDA_ERROR(cudaMemcpy(w, h_w.data(), sizeof(float)*ax.n, cudaMemcpyHostToDevice));
+        CHECK_CUDA_ERROR(cudaMemcpyAsync(w, h_w.data(), sizeof(float)*ax.n, cudaMemcpyHostToDevice, _stream_));
         return w;
     }
 

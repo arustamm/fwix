@@ -10,29 +10,31 @@ template <class M, class D>
 class CudaOperator
 {
 public:
+
+using DomainType = M; 
+using RangeType = D;
+
 	CudaOperator(const std::shared_ptr<hypercube>& domain, const std::shared_ptr<hypercube>& range, 
 								complex_vector* model = nullptr, complex_vector* data = nullptr, 
 								// std::shared_ptr<paramObj> launch_param
-								dim3 grid=1, dim3 block=1) 
-	: _grid_(grid), _block_(block) {
+								dim3 grid=1, dim3 block=1, cudaStream_t stream = 0) 
+	: _grid_(grid), _block_(block), _stream_(stream) {
 		
 		setDomainRange(domain, range);
 		if (model == nullptr) {
 			model_alloc = true;
-			model_vec = make_complex_vector(domain, _grid_, _block_);
+			model_vec = make_complex_vector(domain, _grid_, _block_, _stream_);
 		}
 		else model_vec = model;
 
 		if (data == nullptr) {
 			data_alloc = true;
-			data_vec = make_complex_vector(range, _grid_, _block_);
+			data_vec = make_complex_vector(range, _grid_, _block_, _stream_);
 		}
 		else data_vec = data;
-
-		// for now only batch the range (data) vector
-		batch_size.resize(chunks.size())
-		set_chunks(1);
 		
+		model_vec->set_stream(stream);
+		data_vec->set_stream(stream);
 	 };
 
 	virtual ~CudaOperator() {
@@ -55,49 +57,23 @@ public:
 		throw std::runtime_error("Function not implemented in the derived class."); 
 	};
 
-	void set_chunks(int& chunk) {
-		int base_chunk_size = getRange()->getNdim() / chunk;
-		for (int& b : batch_size) 
-			b = base_chunk_size;
-
-		int remainder = getRange()->getNdim() % chunk;
-		// Distribute the remainder
-		for (int i = 0; i < remainder; ++i) 
-			batch_size[i]++;
-	}
-
-	void set_chunks(vector<int>& chunks) {
-		if (batch.size() != getRange()->getNdim()) 
-			throw std::runtime_error("Must provide number of batches along each dimensions.");
-
-		int base_chunk_size = number / N;  // Integer division in C++
-		int remainder = number % N;
-		std::vector<int> chunks(N, base_chunk_size); // Initialize with base size
-	}
-
-
-	void forward(bool add, std::shared_ptr<M>& model, std::shared_ptr<D>& data) {
+	virtual void forward(bool add, std::shared_ptr<M>& model, std::shared_ptr<D>& data) {
 		// pin the host memory
 		CHECK_CUDA_ERROR(cudaHostRegister(model->getVals(), getDomainSizeInBytes(), cudaHostRegisterDefault));
 		CHECK_CUDA_ERROR(cudaHostRegister(data->getVals(), getRangeSizeInBytes(), cudaHostRegisterDefault));
 
-		for (int i=0; i < batch_size.size(); ++i) {
-			auto batch_size = get_batch_size(i);
-			auto batch_data = data->getVals() + i * batch_size;
-
-			if (add) {
-				CHECK_CUDA_ERROR(cudaMemcpyAsync(data_vec->mat, data->getVals(), getRangeSizeInBytes(), cudaMemcpyHostToDevice, stream));
-			}
-			else {
-				data->zero();
-			}
-			
-			CHECK_CUDA_ERROR(cudaMemcpyAsync(model_vec->mat, model->getVals(), getDomainSizeInBytes(), cudaMemcpyHostToDevice, stream[i]));
-			cu_forward(add, model_vec, data_vec, stream[i]);
-			CHECK_CUDA_ERROR(cudaMemcpyAsync(data->getVals(), data_vec->mat, getRangeSizeInBytes(), cudaMemcpyDeviceToHost, stream[i]));
+		if (add) {
+			CHECK_CUDA_ERROR(cudaMemcpyAsync(data_vec->mat, data->getVals(), getRangeSizeInBytes(), cudaMemcpyHostToDevice, _stream_));
 		}
-
+		else {
+			data->zero();
+		}
 		
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(model_vec->mat, model->getVals(), getDomainSizeInBytes(), cudaMemcpyHostToDevice, _stream_));
+
+		cu_forward(add, model_vec, data_vec);
+
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(data->getVals(), data_vec->mat, getRangeSizeInBytes(), cudaMemcpyDeviceToHost, _stream_));
 
 		// unpin the memory
 		CHECK_CUDA_ERROR(cudaHostUnregister(model->getVals()));
@@ -105,21 +81,21 @@ public:
 	};
 
 	// this is host-to-host function
-	void adjoint(bool add, std::shared_ptr<M>& model, std::shared_ptr<D>& data) {
+	virtual void adjoint(bool add, std::shared_ptr<M>& model, std::shared_ptr<D>& data) {
 		// pin the host memory
 		CHECK_CUDA_ERROR(cudaHostRegister(model->getVals(), getDomainSizeInBytes(), cudaHostRegisterDefault));
 		CHECK_CUDA_ERROR(cudaHostRegister(data->getVals(), getRangeSizeInBytes(), cudaHostRegisterDefault));
 
 		if (add) {
-			CHECK_CUDA_ERROR(cudaMemcpyAsync(model_vec->mat, model->getVals(), getDomainSizeInBytes(), cudaMemcpyHostToDevice));
+			CHECK_CUDA_ERROR(cudaMemcpyAsync(model_vec->mat, model->getVals(), getDomainSizeInBytes(), cudaMemcpyHostToDevice, _stream_));
 		}
 		else {
 			model->zero();
 		}
 
-		CHECK_CUDA_ERROR(cudaMemcpyAsync(data_vec->mat,data->getVals(), getRangeSizeInBytes(), cudaMemcpyHostToDevice));
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(data_vec->mat,data->getVals(), getRangeSizeInBytes(), cudaMemcpyHostToDevice, _stream_));
 		cu_adjoint(add, model_vec, data_vec);
-		CHECK_CUDA_ERROR(cudaMemcpyAsync(model->getVals(),model_vec->mat, getDomainSizeInBytes(), cudaMemcpyDeviceToHost));
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(model->getVals(),model_vec->mat, getDomainSizeInBytes(), cudaMemcpyDeviceToHost, _stream_));
 
 		// unpin the memory
 		CHECK_CUDA_ERROR(cudaHostUnregister(model->getVals()));
@@ -133,41 +109,41 @@ public:
 		CHECK_CUDA_ERROR(cudaHostRegister(data->getVals(), getRangeSizeInBytes(), cudaHostRegisterDefault));
 
 		if (add) {
-			CHECK_CUDA_ERROR(cudaMemcpyAsync(model_vec->mat, model->getVals(), getDomainSizeInBytes(), cudaMemcpyHostToDevice));
+			CHECK_CUDA_ERROR(cudaMemcpyAsync(model_vec->mat, model->getVals(), getDomainSizeInBytes(), cudaMemcpyHostToDevice, _stream_));
 		}
 		else {
 			model->zero();
 		}
 
-		CHECK_CUDA_ERROR(cudaMemcpyAsync(data_vec->mat,data->getVals(), getRangeSizeInBytes(), cudaMemcpyHostToDevice));
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(data_vec->mat,data->getVals(), getRangeSizeInBytes(), cudaMemcpyHostToDevice, _stream_));
 		cu_inverse(add, model_vec, data_vec);
-		CHECK_CUDA_ERROR(cudaMemcpyAsync(model->getVals(),model_vec->mat, getDomainSizeInBytes(), cudaMemcpyDeviceToHost));
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(model->getVals(),model_vec->mat, getDomainSizeInBytes(), cudaMemcpyDeviceToHost, _stream_));
 
 		// unpin the memory
 		CHECK_CUDA_ERROR(cudaHostUnregister(model->getVals()));
 		CHECK_CUDA_ERROR(cudaHostUnregister(data->getVals()));
 	};
 
-	void forward(std::shared_ptr<D>& data) {
+	virtual void forward(std::shared_ptr<D>& data) {
 		// pin the host memory
 		CHECK_CUDA_ERROR(cudaHostRegister(data->getVals(), getRangeSizeInBytes(), cudaHostRegisterDefault));
 		
-		CHECK_CUDA_ERROR(cudaMemcpyAsync(data_vec->mat, data->getVals(), getRangeSizeInBytes(), cudaMemcpyHostToDevice));
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(data_vec->mat, data->getVals(), getRangeSizeInBytes(), cudaMemcpyHostToDevice, _stream_));
 		cu_forward(true, data_vec, data_vec);
-		CHECK_CUDA_ERROR(cudaMemcpyAsync(data->getVals(), data_vec->mat, getRangeSizeInBytes(), cudaMemcpyDeviceToHost));
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(data->getVals(), data_vec->mat, getRangeSizeInBytes(), cudaMemcpyDeviceToHost, _stream_));
 
 		// unpin the memory
 		CHECK_CUDA_ERROR(cudaHostUnregister(data->getVals()));
 	};
 
 	// this is host-to-host function
-	void adjoint(std::shared_ptr<M>& model) {
+	virtual void adjoint(std::shared_ptr<M>& model) {
 		// pin the host memory
 		CHECK_CUDA_ERROR(cudaHostRegister(model->getVals(), getDomainSizeInBytes(), cudaHostRegisterDefault));
 		
-		CHECK_CUDA_ERROR(cudaMemcpyAsync(model_vec->mat, model->getVals(), getDomainSizeInBytes(), cudaMemcpyHostToDevice));
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(model_vec->mat, model->getVals(), getDomainSizeInBytes(), cudaMemcpyHostToDevice, _stream_));
 		cu_adjoint(true, model_vec, model_vec);
-		CHECK_CUDA_ERROR(cudaMemcpyAsync(model->getVals(), model_vec->mat, getDomainSizeInBytes(), cudaMemcpyDeviceToHost));
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(model->getVals(), model_vec->mat, getDomainSizeInBytes(), cudaMemcpyDeviceToHost, _stream_));
 
 		// unpin the memory
 		CHECK_CUDA_ERROR(cudaHostUnregister(model->getVals()));
@@ -205,8 +181,8 @@ public:
 		_model->random();
 		_data->random();
 
-		forward(false, _model,d1);
-		adjoint(false, m1,_data);
+		this->forward(false, _model,d1);
+		this->adjoint(false, m1,_data);
 
 		// std::cerr << typeid(*this).name() << '\n';
     double err;
@@ -218,8 +194,8 @@ public:
     else std::cout << "Passed with relative error: " << std::to_string(err) << std::endl;
 		std::cout << "*********************************" << '\n';
 
-		forward(true, _model,d1);
-		adjoint(true, m1,_data);
+		this->forward(true, _model,d1);
+		this->adjoint(true, m1,_data);
 
 		std::cout << "********** ADD = TRUE **********" << '\n';
 		std::cout << "<m,A'd>: " << _model->dot(m1) << std::endl;
@@ -237,7 +213,7 @@ protected:
 	std::shared_ptr<hypercube> _range;
 	dim3 _grid_, _block_;
 	bool model_alloc = false, data_alloc = false;
-	vector<int> batch_size;
-	
+	cudaStream_t _stream_;
+
 };
 

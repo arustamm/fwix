@@ -35,6 +35,7 @@ using namespace SEP;
 typedef struct complex_vector
 {
     cuFloatComplex* mat;
+    cudaStream_t _stream_ = 0;
     bool allocated = false;
     int* n;
     float* d;
@@ -48,6 +49,10 @@ typedef struct complex_vector
       _block_ = block.x * block.y * block.z;
     }
 
+    void set_stream(cudaStream_t stream) {
+      _stream_ = stream;
+    }
+
     void zero() {
       CHECK_CUDA_ERROR(cudaMemset(mat, 0, sizeof(cuFloatComplex)*nelem));
     }
@@ -56,12 +61,12 @@ typedef struct complex_vector
 
     void add(complex_vector* vec);
 
-    complex_vector* make_view();
-    const complex_vector* make_const_view();
+    complex_vector* make_view(int start, int end);
+    // const complex_vector* make_const_view();
 
     // to slice the multi-d array along the last axis and return (ndim-1)-d array
-    void view_at(complex_vector* view, int index);
-    void view_at(const complex_vector* view, int index);
+    // void view_at(complex_vector* view, int index);
+    // void view_at(const complex_vector* view, int index);
 
     ~complex_vector() {
       if (allocated) {
@@ -74,7 +79,7 @@ typedef struct complex_vector
     };
 } complex_vector;
 
-complex_vector* make_complex_vector(const std::shared_ptr<hypercube>& hyper, dim3 grid=1, dim3 block=1);
+complex_vector* make_complex_vector(const std::shared_ptr<hypercube>& hyper, dim3 grid=1, dim3 block=1, cudaStream_t stream = 0);
 // create the view (only slice through last axis)
 complex_vector* make_view(complex_vector* parent);
 

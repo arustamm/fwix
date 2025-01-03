@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <complex_vector.h>
 #include <cuda_runtime.h>
+#include "StreamingOperator.h"
 
 class FFTTest : public testing::Test {
  protected:
@@ -96,6 +97,63 @@ TEST_F(FFTTest, mono_plane_wave) {
 
 TEST_F(FFTTest, dotTest) { 
   ASSERT_NO_THROW(cuFFT->dotTest());
+}
+
+class StreamingTest : public testing::Test {
+ protected:
+  void SetUp() override {
+    n1 = 100;
+    n2 = 100;
+    n3 = 20;
+    n4 = 10;
+    int nstreams = 4;
+    dim3 grid = {32, 4, 4};
+    dim3 block = {16, 16, 4};
+    
+    auto hyper = std::make_shared<hypercube>(n1, n2, n3, n4);
+    space4d = std::make_shared<complex4DReg>(hyper);
+    space4d->set(1.f);
+    streamingFFT = std::make_unique<StreamingOperator<cuFFT2d>>(hyper,grid,block,nstreams);
+  }
+
+  std::unique_ptr<StreamingOperator<cuFFT2d>> streamingFFT;
+  std::shared_ptr<complex4DReg> space4d;
+  int n1, n2, n3, n4;
+};
+
+TEST_F(StreamingTest, forward_inverse) {
+  auto input = space4d->clone();
+  auto output = space4d->clone();
+  auto inv = space4d->clone();
+  input->random();
+  input->scale(2.f);
+  streamingFFT->forward(false, input, output);
+  streamingFFT->adjoint(false, inv, output);
+  for (int i = 0; i < space4d->getHyper()->getN123(); ++i) {
+    EXPECT_NEAR(input->getVals()[i].real(), inv->getVals()[i].real(), 1e-6);
+    EXPECT_NEAR(input->getVals()[i].imag(), inv->getVals()[i].imag(), 1e-6);
+  }
+}
+
+TEST_F(StreamingTest, constant_signal) {
+  auto input = space4d->clone();
+  auto output = space4d->clone();
+  streamingFFT->forward(false, input, output);
+  for (int i4 = 0; i4 < n4; ++i4) {
+    for (int i3 = 0; i3 < n3; ++i3) {
+      for (int i2 = 0; i2 < n2; ++i2) {
+        for (int i1 = 0; i1 < n1; ++i1) {
+          // check DC component
+          if (i1 == 0 && i2 == 0) EXPECT_NEAR((*output->_mat)[i4][i3][i2][i1].real(), n1*n2/sqrtf(n1*n2), 1e-6);
+          EXPECT_NEAR((*output->_mat)[i4][i3][i2][i1].imag(), 0.0f, 1e-6);
+        }
+      }
+    }
+  }
+}
+
+TEST_F(StreamingTest, dotTest) { 
+  ASSERT_NO_THROW(streamingFFT->dotTest());
 }
 
 

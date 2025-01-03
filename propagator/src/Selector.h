@@ -11,14 +11,15 @@ class Selector : public CudaOperator<complex4DReg,complex4DReg>
 public:
 
 	Selector(const std::shared_ptr<hypercube>& domain, 
-	complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid=1, dim3 block=1) 
-	: CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block) {
+	complex_vector* model = nullptr, complex_vector* data = nullptr, 
+	dim3 grid=1, dim3 block=1, cudaStream_t stream = 0) 
+	: CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block, stream) {
 		_grid_ = {32, 4, 4};
   _block_ = {16, 16, 4};
 
 		_size_ = domain->getAxis(1).n * domain->getAxis(2).n * domain->getAxis(3).n;
 		CHECK_CUDA_ERROR(cudaMalloc((void **)&d_labels, sizeof(int)*_size_));
-		launcher = Selector_launcher(&select_forward, _grid_, _block_);
+		launcher = Selector_launcher(&select_forward, _grid_, _block_, _stream_);
 	};
 	
 	~Selector() {
@@ -27,7 +28,7 @@ public:
 
 	void set_labels(int* labels) {
 		// labels are 3D -- (x,y,w)
-		CHECK_CUDA_ERROR(cudaMemcpyAsync(d_labels, labels, sizeof(int)*_size_, cudaMemcpyHostToDevice));
+		CHECK_CUDA_ERROR(cudaMemcpyAsync(d_labels, labels, sizeof(int)*_size_, cudaMemcpyHostToDevice, _stream_));
 	};
 	void set_value(int value) {_value_ = value;}
 

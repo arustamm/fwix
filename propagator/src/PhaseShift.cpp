@@ -4,14 +4,14 @@
 
 
 PhaseShift::PhaseShift(const std::shared_ptr<hypercube>& domain, float dz, float eps, 
-complex_vector* model, complex_vector* data, dim3 grid, dim3 block) 
-: CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block), _dz_(dz), _eps_(eps) {
+complex_vector* model, complex_vector* data, dim3 grid, dim3 block, cudaStream_t stream) 
+: CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block, stream), _dz_(dz), _eps_(eps) {
 
   _grid_ = {32, 4, 4};
   _block_ = {16, 16, 4};
 
-  launcher = PS_launcher(&ps_forward, &ps_adjoint, _grid_, _block_);
-  launcher_inv = PS_launcher(&ps_forward, &ps_inverse, _grid_, _block_); 
+  launcher = PS_launcher(&ps_forward, &ps_adjoint, _grid_, _block_, _stream_);
+  launcher_inv = PS_launcher(&ps_forward, &ps_inverse, _grid_, _block_, _stream_); 
 
   d_w2 = fill_in_w(domain->getAxis(3));
   d_ky = fill_in_k(domain->getAxis(2));
@@ -22,10 +22,8 @@ complex_vector* model, complex_vector* data, dim3 grid, dim3 block)
 };
 
 void PhaseShift::set_grid_block(dim3 grid, dim3 block) {
-  _grid_ = grid;
-  _block_ = block;
-  launcher = PS_launcher(&ps_forward, &ps_adjoint, _grid_, _block_); 
-  launcher_inv = PS_launcher(&ps_forward, &ps_inverse, _grid_, _block_); 
+  launcher.set_grid_block(grid, block);
+  launcher_inv.set_grid_block(grid, block);
 }
 
 void PhaseShift::cu_forward (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) {

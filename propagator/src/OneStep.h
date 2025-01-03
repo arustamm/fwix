@@ -10,19 +10,20 @@
 class OneStep : public CudaOperator<complex4DReg, complex4DReg>  {
 public:
   OneStep (const std::shared_ptr<hypercube>& domain, std::shared_ptr<complex4DReg> slow, std::shared_ptr<paramObj> par, 
-  complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid = 1, dim3 block = 1) :
-  CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block) {
+  complex_vector* model = nullptr, complex_vector* data = nullptr, 
+  dim3 grid = 1, dim3 block = 1, cudaStream_t stream = 0) :
+  CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block, stream) {
 
     _nref_ = par->getInt("nref",1);
     _ref_ = std::make_unique<RefSampler>(slow, _nref_);
-    ps = std::make_unique<PhaseShift>(domain, slow->getHyper()->getAxis(4).d, par->getFloat("eps",0.04), model_vec, data_vec);
+    ps = std::make_unique<PhaseShift>(domain, slow->getHyper()->getAxis(4).d, par->getFloat("eps",0.04), model_vec, data_vec, grid, block, stream);
 
     _wfld_ref = model_vec->cloneSpace();
 
     model_k = model_vec->cloneSpace();
 
-    fft2d = std::make_unique<cuFFT2d>(domain, model_vec, data_vec);
-    select = std::make_unique<Selector>(domain, model_vec, data_vec);
+    fft2d = std::make_unique<cuFFT2d>(domain, model_vec, data_vec, grid, block, stream);
+    select = std::make_unique<Selector>(domain, model_vec, data_vec, grid, block, stream);
   };
 
   virtual ~OneStep() {
@@ -53,8 +54,8 @@ protected:
 class PSPI : public OneStep {
 public:
   PSPI (const std::shared_ptr<hypercube>& domain, std::shared_ptr<complex4DReg> slow, std::shared_ptr<paramObj> par,
-  complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid = 1, dim3 block = 1) :
-  OneStep(domain, slow, par, model, data, grid, block) {};
+  complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid = 1, dim3 block = 1, cudaStream_t stream = 0) :
+  OneStep(domain, slow, par, model, data, grid, block, stream) {};
 
   void cu_forward (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
   void cu_adjoint (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
@@ -64,8 +65,8 @@ public:
 class NSPS : public OneStep {
 public:
   NSPS (const std::shared_ptr<hypercube>& domain, std::shared_ptr<complex4DReg> slow, std::shared_ptr<paramObj> par,
-  complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid = 1, dim3 block = 1) :
-  OneStep(domain, slow, par, model, data, grid, block) {};
+  complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid = 1, dim3 block = 1, cudaStream_t stream = 0) :
+  OneStep(domain, slow, par, model, data, grid, block, stream) {};
 
   void cu_forward (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
   void cu_adjoint (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);

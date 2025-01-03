@@ -7,15 +7,21 @@ void Downward::cu_forward(bool add, complex_vector* __restrict__ model, complex_
 
 	if(!add) data->zero();
 
-	for (int iz=0; iz < ax[4].n-1; ++iz) {
-		// slice through 5d wfld to get 4d wfld
-		model->view_at(curr, iz);
-		data->view_at(next, iz+1);
-		// propagate one step
-		prop->set_depth(iz);
-		prop->cu_forward(true, curr, next);
-		CHECK_CUDA_ERROR( cudaDeviceSynchronize() );
-	}
+	// for (batches in z)
+
+		for (int iz=0; iz < ax[4].n-1; ++iz) {
+			// slice through 5d wfld to get 4d wfld
+			model->view_at(curr, iz);
+			data->view_at(next, iz+1);
+			// propagate one step
+			prop->set_depth(iz);
+			prop->cu_forward(true, curr, next);
+			CHECK_CUDA_ERROR( cudaDeviceSynchronize() );
+		}
+	
+	// prop->set_slow(slow->next_batch());
+	// cudaMemCpyAsync(_slow_chunk, slow->next(), H2D, stream);
+// }
 
 }
 

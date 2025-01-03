@@ -3,8 +3,8 @@
 using namespace SEP;
 
 cuFFT2d::cuFFT2d(const std::shared_ptr<hypercube>& domain, complex_vector* model, complex_vector* data, 
-dim3 grid, dim3 block)
-: CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block) {
+dim3 grid, dim3 block, cudaStream_t stream)
+: CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block, stream) {
   // create plan
   
   NX = getDomain()->getAxis(1).n;
@@ -19,7 +19,9 @@ dim3 grid, dim3 block)
   // set the callback to make it orthogonal
   register_ortho_callback();
 
-  temp = make_complex_vector(domain, model_vec->_grid_, data_vec->_block_);
+  temp = make_complex_vector(domain, model_vec->_grid_, data_vec->_block_, stream);
+
+  cufftSetStream(plan, stream);
 };
 
 // this is on-device function

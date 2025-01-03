@@ -2,10 +2,10 @@
 #include <prop_kernels.cuh>
 #include <cuda.h>
 
-Injection::Injection(const std::shared_ptr<hypercube>& domain,const std::shared_ptr<hypercube>& range, complex_vector* model, complex_vector* data, dim3 grid, dim3 block) 
-: CudaOperator<complex2DReg, complex5DReg>(domain, range, model, data, grid, block) {
+Injection::Injection(const std::shared_ptr<hypercube>& domain,const std::shared_ptr<hypercube>& range, complex_vector* model, complex_vector* data, dim3 grid, dim3 block, cudaStream_t stream) 
+: CudaOperator<complex2DReg, complex5DReg>(domain, range, model, data, grid, block, stream) {
 
-  launcher = Injection_launcher(&inj_forward, &inj_adjoint, _grid_, _block_);
+  launcher = Injection_launcher(&inj_forward, &inj_adjoint, _grid_, _block_, _stream_);
   
   ntrace = domain->getAxis(2).n; // sources or receivers
 
@@ -17,8 +17,8 @@ Injection::Injection(const std::shared_ptr<hypercube>& domain,const std::shared_
 
 Injection::Injection(const std::shared_ptr<hypercube>& domain,const std::shared_ptr<hypercube>& range, 
 const std::vector<float>& cx, const std::vector<float>& cy, const std::vector<float>& cz, const std::vector<int>& ids, 
-complex_vector* model, complex_vector* data, dim3 grid, dim3 block) 
-: Injection(domain, range, model, data, grid, block) {
+complex_vector* model, complex_vector* data, dim3 grid, dim3 block, cudaStream_t stream) 
+: Injection(domain, range, model, data, grid, block, stream) {
   
   set_coords(cx, cy, cz, ids);
 

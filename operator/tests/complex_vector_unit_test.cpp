@@ -57,18 +57,22 @@ TEST_F(ComplexVectorTest, check_complex_vector) {
 
 TEST_F(ComplexVectorTest, make_view) {
   // Create a view using make_view
-  complex_vector* view = vec->make_view();
+  int start = 4;
+  int end = 9;
+  complex_vector* view = vec->make_view(start,end);
 
   // Check dimensions and size
-  ASSERT_EQ(view->ndim, vec->ndim - 1);
-  ASSERT_EQ(view->nelem, vec->nelem / vec->n[vec->ndim - 1]);
+  ASSERT_EQ(view->ndim, vec->ndim);
+  ASSERT_EQ(view->nelem, vec->nelem * (end-start) / n4);
 
   // Check metadata
-  for (int i = 0; i < view->ndim; ++i) {
+  for (int i = 0; i < view->ndim-1; ++i) {
     ASSERT_EQ(view->n[i], vec->n[i]);
     ASSERT_EQ(view->d[i], vec->d[i]);
     ASSERT_EQ(view->o[i], vec->o[i]);
   }
+
+  ASSERT_EQ(view->o[n4-1], vec->o[n4-1] + start*vec->d[n4-1]);
 
   // Check that the view is not allocated
   ASSERT_FALSE(view->allocated);
@@ -84,10 +88,9 @@ TEST_F(ComplexVectorTest, view_modify) {
   // copy to gpu_vec
   CHECK_CUDA_ERROR(cudaMemcpy(vec->mat, cpu_vec->getVals(), hyper->getN123() * sizeof(cuFloatComplex), cudaMemcpyHostToDevice));
   // create a view
-  complex_vector* view = vec->make_view();
   // actually take a view
   int index = 5;
-  vec->view_at(view, index);
+  complex_vector* view = vec->make_view(index, index+1);
   // zero out the slice
   view->zero();
   // copy back 

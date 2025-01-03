@@ -10,11 +10,11 @@ using namespace SEP;
 class Injection : public CudaOperator<complex2DReg, complex5DReg>  {
 public:
   
-  Injection(const std::shared_ptr<hypercube>& domain,const std::shared_ptr<hypercube>& range, complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid=1, dim3 block=1);
+  Injection(const std::shared_ptr<hypercube>& domain,const std::shared_ptr<hypercube>& range, complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid=1, dim3 block=1, cudaStream_t stream = 0);
 
   Injection(const std::shared_ptr<hypercube>& domain,const std::shared_ptr<hypercube>& range, 
   const std::vector<float>& cx, const std::vector<float>& cy, const std::vector<float>& cz, const std::vector<int>& ids, 
-  complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid=1, dim3 block=1);
+  complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid=1, dim3 block=1, cudaStream_t stream = 0);
   
   ~Injection() {
     CHECK_CUDA_ERROR(cudaFree(d_cx));
@@ -27,17 +27,17 @@ public:
   void cu_adjoint (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
 
   void set_coords(const std::vector<float>& cx, const std::vector<float>& cy, const std::vector<float>& cz, const std::vector<int>& ids) {
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_cx, cx.data(), sizeof(float)*ntrace, cudaMemcpyHostToDevice));
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_cy, cy.data(), sizeof(float)*ntrace, cudaMemcpyHostToDevice));
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_cz, cz.data(), sizeof(float)*ntrace, cudaMemcpyHostToDevice));
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_ids, ids.data(), sizeof(int)*ntrace, cudaMemcpyHostToDevice));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_cx, cx.data(), sizeof(float)*ntrace, cudaMemcpyHostToDevice, _stream_));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_cy, cy.data(), sizeof(float)*ntrace, cudaMemcpyHostToDevice, _stream_));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_cz, cz.data(), sizeof(float)*ntrace, cudaMemcpyHostToDevice, _stream_));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_ids, ids.data(), sizeof(int)*ntrace, cudaMemcpyHostToDevice, _stream_));
   };
 
    void set_coords(const float* cx, const float* cy, const float* cz, const int* ids) {
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_cx, cx, sizeof(float)*ntrace, cudaMemcpyHostToDevice));
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_cy, cy, sizeof(float)*ntrace, cudaMemcpyHostToDevice));
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_cz, cz, sizeof(float)*ntrace, cudaMemcpyHostToDevice));
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_ids, ids, sizeof(int)*ntrace, cudaMemcpyHostToDevice));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_cx, cx, sizeof(float)*ntrace, cudaMemcpyHostToDevice, _stream_));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_cy, cy, sizeof(float)*ntrace, cudaMemcpyHostToDevice, _stream_));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_cz, cz, sizeof(float)*ntrace, cudaMemcpyHostToDevice, _stream_));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_ids, ids, sizeof(int)*ntrace, cudaMemcpyHostToDevice, _stream_));
   };
 
 private:

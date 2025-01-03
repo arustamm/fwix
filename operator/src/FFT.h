@@ -10,7 +10,8 @@ using namespace SEP;
 class cuFFT2d : public CudaOperator<complex4DReg, complex4DReg> {
 	public:
 		cuFFT2d(const std::shared_ptr<hypercube>& domain, complex_vector* model = nullptr, complex_vector* data = nullptr, 
-		dim3 grid = 1, dim3 block = 1);
+		dim3 grid = 1, dim3 block = 1,
+		cudaStream_t stream = 0);
 		
 		~cuFFT2d() {
 			temp->~complex_vector();

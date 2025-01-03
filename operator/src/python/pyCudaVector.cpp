@@ -5,8 +5,6 @@
 #include <pybind11/stl.h>
 
 #include "FFT.h"
-#include "complex_vector.h"
-#include <cuda_runtime.h>
 
 namespace py = pybind11;
 
