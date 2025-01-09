@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 #include <complex_vector.h>
 #include <cuda_runtime.h>
+#include "SZ3/api/sz.hpp"
 
 class ComplexVectorTest : public testing::Test {
  protected:
@@ -49,6 +50,7 @@ TEST_F(ComplexVectorTest, check_complex_vector) {
     ASSERT_EQ(d[i], hyper->getAxis(i+1).d);
     ASSERT_EQ(o[i], hyper->getAxis(i+1).o);
   }
+  // vec->compress();
   delete[] n;
   delete[] o;
   delete[] d;
@@ -112,6 +114,59 @@ TEST_F(ComplexVectorTest, view_modify) {
   CHECK_CUDA_ERROR(cudaFree(view));
 
 }
+
+TEST_F(ComplexVectorTest, compress_decompress) {
+  auto orig = std::make_shared<complex4DReg>(hyper);
+  auto decomp = std::make_shared<complex4DReg>(hyper);
+
+// Loop through each dimension
+float dx = 0.01f;
+float dy = 0.01f;
+  for (int i4 = 0; i4 < n4; ++i4) {
+    float sx = i4 * dx;
+    float sy = i4 * dy;
+    for (int i3 = 0; i3 < n3; ++i3) {
+      float w = i3 * 2.0f * M_PI / 4.0f;
+      for (int i2 = 0; i2 < n2; ++i2) {
+        for (int i1 = 0; i1 < n1; ++i1) {
+          // Calculate the wave vector components
+          float kx = 2.0f * M_PI * w / 0.01f; 
+          float ky = 2.0f * M_PI * w /0.01f;
+          // Calculate the phase 
+          float phase = kx * (i1 * dx - sx) + ky * (i2 * dy - sy);
+          // Generate the plane wave value
+          (*orig->_mat)[i4][i3][i2][i1] = std::polar(1.0f, phase); // Amplitude 1, phase calculated above
+        }
+      }
+    }
+  }
+
+  const float* data = reinterpret_cast<const float*>(orig->getVals());
+
+  SZ3::Config conf(2*n4,n3,n2,n1);
+  conf.cmprAlgo = SZ3::ALGO_INTERP_LORENZO;
+  conf.errorBoundMode = SZ3::EB_ABS; // refer to def.hpp for all supported error bound mode
+  conf.absErrorBound = 1E-3; // absolute error bound 1e-3
+  size_t outSize;
+  char *compressedData = SZ_compress(conf, data, outSize);
+
+  // decompress
+  float* outdata = reinterpret_cast<float*>(decomp->getVals());
+  SZ_decompress(conf, compressedData, outSize, outdata);
+
+  decomp->scaleAdd(orig, 1, -1);
+  double err = sqrt(std::real(decomp->dot(decomp)) / std::real(orig->dot(orig)));
+  std::cout << "Error: " << err << "\n";
+
+  size_t originalSize = 2 * n4 * n3 * n2 * n1 * sizeof(float); 
+  // Calculate and print the compression ratio
+  double compressionRatio = static_cast<double>(originalSize) / outSize;
+  std::cout << "Compression ratio: " << compressionRatio << std::endl;
+
+  delete[] compressedData;
+}
+
+
 
 
 int main(int argc, char **argv) {

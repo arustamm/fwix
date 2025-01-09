@@ -7,7 +7,7 @@ complex_vector* make_complex_vector(const std::shared_ptr<hypercube>& hyper, dim
   CHECK_CUDA_ERROR(cudaMallocManaged(reinterpret_cast<void **>(&vec), sizeof(complex_vector)));
 
   vec->set_grid_block(grid, block);
-  vec->_stream_ = stream;
+  vec->stream = stream;
 
   int nelem = vec->nelem = hyper->getN123();
   int ndim = vec->ndim = hyper->getNdim();
@@ -31,7 +31,7 @@ complex_vector* complex_vector::cloneSpace() {
   CHECK_CUDA_ERROR(cudaMallocManaged(reinterpret_cast<void **>(&vec), sizeof(complex_vector)));
 
   vec->set_grid_block(this->_grid_, this->_block_);
-  vec->_stream_ = _stream_;
+  vec->stream = stream;
 
   int nelem = vec->nelem = this->nelem;
   int ndim = vec->ndim = this->ndim;
@@ -51,7 +51,7 @@ complex_vector* complex_vector::cloneSpace() {
 };
 
 void complex_vector::add(complex_vector* vec){
-  launch_add(this, vec, _grid_, _block_, _stream_);
+  launch_add(this, vec, _grid_, _block_, this->stream);
 }
 
 complex_vector*  complex_vector::make_view(int start, int end) {
@@ -59,7 +59,7 @@ complex_vector*  complex_vector::make_view(int start, int end) {
   CHECK_CUDA_ERROR(cudaMallocManaged(&view, sizeof(complex_vector)));
 
   view->set_grid_block(_grid_, _block_);
-  view->set_stream(_stream_);
+  view->set_stream(stream);
 
   // Calculate the size of the new vector
   view->ndim = this->ndim; // Keep the same number of dimensions

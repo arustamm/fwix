@@ -18,7 +18,7 @@ void PSPI::cu_forward(bool add, complex_vector* __restrict__ model, complex_vect
 			fft2d->cu_adjoint(_wfld_ref);
 			// // taper->forward(_wfld_ref,_wfld_ref,1);
 
-			// if (checkpoint) save_wfld(iref, _wfld_ref);
+			if (checkpoint) save_wfld(_wfld_ref);
 			
 			select->set_value(iref);
 			select->cu_forward(1, _wfld_ref,data);

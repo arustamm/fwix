@@ -5,7 +5,6 @@
 #include <iostream>
 #include <cuComplex.h>
 #include <unordered_map>
-// a primitive complex vector that holds up to 7-d hypercube and a pointer to a CUDA device 
 
 // thanks to Google's AI Bard
 #define ND_TO_FLAT(idx, dims) ( \
@@ -35,7 +34,6 @@ using namespace SEP;
 typedef struct complex_vector
 {
     cuFloatComplex* mat;
-    cudaStream_t _stream_ = 0;
     bool allocated = false;
     int* n;
     float* d;
@@ -43,6 +41,7 @@ typedef struct complex_vector
     int nelem, ndim;
     // for kernels
     dim3 _grid_, _block_;
+    cudaStream_t stream = 0;
 
     void set_grid_block(dim3 grid, dim3 block) {
       _grid_ = grid.x * grid.y * grid.z;
@@ -50,7 +49,7 @@ typedef struct complex_vector
     }
 
     void set_stream(cudaStream_t stream) {
-      _stream_ = stream;
+      this->stream = stream;
     }
 
     void zero() {

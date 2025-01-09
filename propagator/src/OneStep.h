@@ -39,6 +39,11 @@ public:
   };
   int& get_depth() {return _iz_;};
 
+  void save_wfld(complex_vector* wfld) {
+    complex_vector* compressed = wfld->compress();
+    saved_wfld.push_back(compressed);
+  }
+
 protected:
   complex_vector* _wfld_ref;
   complex_vector* model_k;
@@ -48,6 +53,9 @@ protected:
   std::unique_ptr<PhaseShift> ps;
   std::unique_ptr<cuFFT2d> fft2d;
   std::unique_ptr<Selector> select;
+  
+  bool checkpoint = false;
+  std::vector<complex_vector*> saved_wfld;
 
 };
 
