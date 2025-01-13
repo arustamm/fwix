@@ -39,11 +39,6 @@ public:
   };
   int& get_depth() {return _iz_;};
 
-  void save_wfld(complex_vector* wfld) {
-    complex_vector* compressed = wfld->compress();
-    saved_wfld.push_back(compressed);
-  }
-
 protected:
   complex_vector* _wfld_ref;
   complex_vector* model_k;
@@ -66,8 +61,12 @@ public:
   OneStep(domain, slow, par, model, data, grid, block, stream) {};
 
   void cu_forward (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
+  void cu_forward (complex_vector* __restrict__ model);
+
   void cu_adjoint (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
-  void cu_inverse (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
+  void cu_adjoint (complex_vector* __restrict__ data);
+
+  // void cu_inverse (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
 };
 
 class NSPS : public OneStep {
@@ -78,5 +77,5 @@ public:
 
   void cu_forward (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
   void cu_adjoint (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
-  void cu_inverse (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
+  // void cu_inverse (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
 };

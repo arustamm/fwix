@@ -117,22 +117,22 @@ py::class_<Downward, std::shared_ptr<Downward>>(clsOps, "Downward")
         "Initialize Downward")
 
     .def("forward",
-        (void (Downward::*)(bool, std::shared_ptr<complex5DReg>&, std::shared_ptr<complex5DReg>&)) &
+        (void (Downward::*)(bool, std::shared_ptr<complex4DReg>&, std::shared_ptr<complex4DReg>&)) &
         Downward::forward,
         "Forward operator of Downward")
 
     .def("adjoint",
-        (void (Downward::*)(bool, std::shared_ptr<complex5DReg>&, std::shared_ptr<complex5DReg>&)) &
+        (void (Downward::*)(bool, std::shared_ptr<complex4DReg>&, std::shared_ptr<complex4DReg>&)) &
         Downward::adjoint,
         "Adjoint operator of Downward")
 
     .def("forward",
-        (void (Downward::*)(std::shared_ptr<complex5DReg>&)) &
+        (void (Downward::*)(std::shared_ptr<complex4DReg>&)) &
         Downward::forward,
         "Forward operator of Downward")
 
     .def("adjoint",
-        (void (Downward::*)(std::shared_ptr<complex5DReg>&)) &
+        (void (Downward::*)(std::shared_ptr<complex4DReg>&)) &
         Downward::adjoint,
         "Adjoint operator of Downward");
 
@@ -141,12 +141,12 @@ py::class_<Upward, std::shared_ptr<Upward>>(clsOps, "Upward")
         "Initialize Upward")
 
     .def("forward",
-        (void (Upward::*)(bool, std::shared_ptr<complex5DReg>&, std::shared_ptr<complex5DReg>&)) &
+        (void (Upward::*)(bool, std::shared_ptr<complex4DReg>&, std::shared_ptr<complex4DReg>&)) &
         Upward::forward,
         "Forward operator of Upward")
 
     .def("adjoint",
-        (void (Upward::*)(bool, std::shared_ptr<complex5DReg>&, std::shared_ptr<complex5DReg>&)) &
+        (void (Upward::*)(bool, std::shared_ptr<complex4DReg>&, std::shared_ptr<complex4DReg>&)) &
         Upward::adjoint,
         "Adjoint operator of Upward");
 

@@ -10,7 +10,7 @@ using namespace SEP;
 
 class PhaseShift :  public CudaOperator<complex4DReg, complex4DReg> {
 public:
-    PhaseShift(const std::shared_ptr<hypercube>& domain, float dz, float eps, 
+    PhaseShift(const std::shared_ptr<hypercube>& domain, float dz, float eps = 0.0f, 
     complex_vector* model = nullptr, complex_vector* data = nullptr, 
     dim3 grid=1, dim3 block=1, cudaStream_t stream = 0);
 
@@ -44,11 +44,14 @@ protected:
         float *k;
         CHECK_CUDA_ERROR(cudaMalloc((void **)&k, sizeof(float)*ax.n));
         auto h_k = std::vector<float>(ax.n);
-	    float dk = 2*M_PI/(ax.d*(ax.n-1));
-        for (int ik=0; ik<h_k.size()/2; ik++) 
-            h_k[ik] = ik*dk;
-        for (int ik=1; ik<h_k.size()/2; ik++) 
-            h_k[ax.n-ik] = -h_k[ik];
+	    int n_half = ax.n / 2;
+        float dk = 2*M_PI/(ax.d*ax.n);  // Note: changed to ax.n instead of (ax.n-1)
+        for (int ik = 0; ik <= n_half; ik++) {
+            h_k[ik] = ik * dk;
+        }
+        for (int ik = n_half + 1; ik < ax.n; ik++) {
+            h_k[ik] = (ik - ax.n) * dk;
+        }
         CHECK_CUDA_ERROR(cudaMemcpyAsync(k, h_k.data(), sizeof(float)*ax.n, cudaMemcpyHostToDevice, _stream_));
         return k;
     }

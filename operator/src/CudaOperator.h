@@ -54,7 +54,14 @@ using RangeType = D;
 	virtual void cu_forward(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) = 0;
 	virtual void cu_adjoint(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) = 0;
 	virtual void cu_inverse(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
-		throw std::runtime_error("Function not implemented in the derived class."); 
+		throw std::runtime_error("cu_inverse not implemented in the derived class."); 
+	};
+
+	virtual void cu_forward(complex_vector* __restrict__ model) {
+		throw std::runtime_error("cu_forward not implemented in the derived class."); 
+	};
+	virtual void cu_adjoint(complex_vector* __restrict__ data) {
+		throw std::runtime_error("cu_adjoint not implemented in the derived class."); 
 	};
 
 	virtual void forward(bool add, std::shared_ptr<M>& model, std::shared_ptr<D>& data) {
@@ -173,7 +180,7 @@ using RangeType = D;
 		_range = range->clone();
 	}
 
-	void dotTest() {
+	std::pair<double, double> dotTest(bool verbose = false) {
 		std::shared_ptr<M> m1 = std::make_shared<M>(getDomain());
 		std::shared_ptr<D> d1 = std::make_shared<D>(getRange());
 		auto _model = m1->clone();
@@ -185,25 +192,29 @@ using RangeType = D;
 		this->adjoint(false, m1,_data);
 
 		// std::cerr << typeid(*this).name() << '\n';
-    double err;
-		std::cout << "********** ADD = FALSE **********" << '\n';
-		std::cout << "<m,A'd>: " << _model->dot(m1) << std::endl;
-		std::cout << "<Am,d>: " << std::conj(_data->dot(d1)) << std::endl;
-    err = std::real(std::conj(_data->dot(d1))/_model->dot(m1)) -1.;
-    if (std::abs(err) > 1e-3) throw std::runtime_error("Error exceeds tolerance: " + std::to_string(err));
-    else std::cout << "Passed with relative error: " << std::to_string(err) << std::endl;
-		std::cout << "*********************************" << '\n';
-
+    std::pair<double, double> err;
+		err.first = std::abs(std::real(std::conj(_data->dot(d1))/_model->dot(m1)) -1.);
+		if (verbose) {
+			std::cout << "********** ADD = FALSE **********" << '\n';
+			std::cout << "<m,A'd>: " << _model->dot(m1) << std::endl;
+			std::cout << "<Am,d>: " << std::conj(_data->dot(d1)) << std::endl;
+			std::cout << "Error: " << err.first << "\n";
+			std::cout << "*********************************" << '\n';
+		}
+		
 		this->forward(true, _model,d1);
 		this->adjoint(true, m1,_data);
+		err.second = std::abs(std::real(std::conj(_data->dot(d1))/_model->dot(m1)) -1.);
 
-		std::cout << "********** ADD = TRUE **********" << '\n';
-		std::cout << "<m,A'd>: " << _model->dot(m1) << std::endl;
-		std::cout << "<Am,d>: " << std::conj(_data->dot(d1)) << std::endl;
-    err = std::real(std::conj(_data->dot(d1))/_model->dot(m1)) -1.;
-    if (std::abs(err) > 1e-3) throw std::runtime_error("Error exceeds tolerance: " + std::to_string(err));
-    else std::cout << "Passed with relative error: " << std::to_string(err) << std::endl;
-		std::cout << "*********************************" << '\n';
+		if (verbose) {
+			std::cout << "********** ADD = TRUE **********" << '\n';
+			std::cout << "<m,A'd>: " << _model->dot(m1) << std::endl;
+			std::cout << "<Am,d>: " << std::conj(_data->dot(d1)) << std::endl;
+			std::cout << "Error: " << err.second << "\n";
+			std::cout << "*********************************" << '\n';
+		}
+		
+		return err;
 };
 
 complex_vector *model_vec, *data_vec; 

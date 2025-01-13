@@ -25,6 +25,8 @@ __global__ void ps_forward(complex_vector* __restrict__ model, complex_vector* _
   int jy = blockDim.y * gridDim.y;
   int jw = blockDim.z * gridDim.z;
 
+  for (int is=0; is < NS; ++is) {
+
   for (int iw=iw0; iw < NW; iw += jw) {
     float sre = cuCrealf(slow_ref[iw]);
     float sim = cuCimagf(slow_ref[iw]);
@@ -43,7 +45,6 @@ __global__ void ps_forward(complex_vector* __restrict__ model, complex_vector* _
         }
         
         // convert 4d index to flat index
-        for (int is=0; is < NS; ++is) {
 
           int nd_ind[] = {is, iw, iy, ix};
           flat_ind = ND_TO_FLAT(nd_ind, dims);
@@ -84,6 +85,8 @@ __global__ void ps_adjoint(complex_vector* __restrict__ model, complex_vector* _
   int jy = blockDim.y * gridDim.y;
   int jw = blockDim.z * gridDim.z;
 
+  for (int is=0; is < NS; ++is) {
+
   for (int iw=iw0; iw < NW; iw += jw) {
     float sre = cuCrealf(slow_ref[iw]);
     float sim = cuCimagf(slow_ref[iw]);
@@ -100,8 +103,6 @@ __global__ void ps_adjoint(complex_vector* __restrict__ model, complex_vector* _
           re = -sqrt((c+a)/2);
 				  im = -sqrt((c-a)/2);
         }
-
-        for (int is=0; is < NS; ++is) {
 
           // convert 4d index to flat index
           int nd_ind[] = {is, iw, iy, ix};
@@ -143,6 +144,8 @@ __global__ void ps_inverse(complex_vector* __restrict__ model, complex_vector* _
   int jy = blockDim.y * gridDim.y;
   int jw = blockDim.z * gridDim.z;
 
+  for (int is=0; is < NS; ++is) {
+
   for (int iw=iw0; iw < NW; iw += jw) {
     float sre = cuCrealf(slow_ref[iw]);
     float sim = cuCimagf(slow_ref[iw]);
@@ -159,8 +162,6 @@ __global__ void ps_inverse(complex_vector* __restrict__ model, complex_vector* _
           re = -sqrt((c+a)/2);
 				  im = sqrt((c-a)/2);
         }
-
-        for (int is=0; is < NS; ++is) {
 
           // convert 4d index to flat index
           int nd_ind[] = {is, iw, iy, ix};

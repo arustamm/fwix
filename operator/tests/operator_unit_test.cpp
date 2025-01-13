@@ -5,6 +5,9 @@
 #include <cuda_runtime.h>
 #include "StreamingOperator.h"
 
+bool verbose = false;
+double tolerance = 1e-6;
+
 class FFTTest : public testing::Test {
  protected:
   void SetUp() override {
@@ -96,7 +99,9 @@ TEST_F(FFTTest, mono_plane_wave) {
 }
 
 TEST_F(FFTTest, dotTest) { 
-  ASSERT_NO_THROW(cuFFT->dotTest());
+  auto err = cuFFT->dotTest(verbose);
+  ASSERT_TRUE(err.first <= tolerance);
+  ASSERT_TRUE(err.second <= tolerance);
 }
 
 class StreamingTest : public testing::Test {
@@ -153,11 +158,21 @@ TEST_F(StreamingTest, constant_signal) {
 }
 
 TEST_F(StreamingTest, dotTest) { 
-  ASSERT_NO_THROW(streamingFFT->dotTest());
+  auto err = streamingFFT->dotTest(verbose);
+  ASSERT_TRUE(err.first <= tolerance);
+  ASSERT_TRUE(err.second <= tolerance);
 }
 
 
 int main(int argc, char **argv) {
+  for (int i = 1; i < argc; ++i) {
+    if (std::string(argv[i]) == "--verbose") {
+      verbose = true;
+    }
+    else if (std::string(argv[i]) == "--tolerance" && i + 1 < argc) {
+      tolerance = std::stod(argv[i + 1]);
+    }
+  }
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

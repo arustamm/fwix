@@ -5,53 +5,44 @@
 #include <OneStep.h>
 
 // propagating wavefields in the volume [nz, ns, nw, ny, nx] from 0 to nz-1
-class OneWay : public CudaOperator<complex5DReg, complex5DReg>  {
+class OneWay : public CudaOperator<complex4DReg, complex4DReg>  {
 public:
-  OneWay (const std::shared_ptr<hypercube>& domain, std::shared_ptr<complex4DReg> slow, std::shared_ptr<paramObj> par, complex_vector* model = nullptr, complex_vector* data = nullptr) :
-  CudaOperator<complex5DReg, complex5DReg>(domain, domain, model, data) {
+  OneWay (const std::shared_ptr<hypercube>& domain, std::shared_ptr<complex4DReg> slow, std::shared_ptr<paramObj> par, complex_vector* model = nullptr, complex_vector* data = nullptr, 
+  dim3 grid = 1, dim3 block = 1, cudaStream_t stream = 0) :
+  CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block, stream) {
 
-    // create vector for views (does not acquire data)
-    curr = model_vec->make_view();
-    next = model_vec->make_view();
-
-    ax = domain->getAxes();
-    // hyper = [ns, nw, nx ,ny]
-    auto hyper = std::make_shared<hypercube>(ax[0], ax[1], ax[2], ax[3]);
+    auto ax = domain->getAxes();
+    m_ax = slow->getHyper()->getAxes();
+    // make a 5d wfld to store [nz, ns, nw, nx ,ny]
+    auto hyper = std::make_shared<hypercube>(ax[0], ax[1], ax[2], ax[3], m_ax[3]);
+    wfld = std::make_shared<complex5DReg>(hyper);
+    CHECK_CUDA_ERROR(cudaHostRegister(wfld->getVals(), this->getDomainSizeInBytes()*m_ax[3].n, cudaHostRegisterDefault));
     // for now only support PSPI propagator
-    _grid_ = {128, 128, 8};
-    _block_ = {16, 16, 2};
-    curr->set_grid_block(_grid_, _block_);
-    next->set_grid_block(_grid_, _block_);
-    prop = std::make_unique<PSPI>(hyper, slow, par, curr, next, _grid_, _block_);
+
+    prop = std::make_unique<PSPI>(domain, slow, par, model_vec, data_vec, _grid_, _block_, _stream_);
 
   };
+
+  std::shared_ptr<complex5DReg> get_wfld() {
+    return wfld;
+  }
 
   virtual ~OneWay() {
-    curr->~complex_vector();
-    CHECK_CUDA_ERROR(cudaFree(curr));
-    next->~complex_vector();
-    CHECK_CUDA_ERROR(cudaFree(next));
+    CHECK_CUDA_ERROR(cudaHostUnregister(wfld->getVals()));
   };
-
-  void set_wfld(complex_vector* wfld) {
-
-  };
-
-  void save_wfld(complex_vector* wfld) {};
-
 
 protected:
-  complex_vector* curr;
-  complex_vector* next;
   std::unique_ptr<OneStep> prop;
-  std::vector<axis> ax;
+  std::vector<axis> m_ax;
+  std::shared_ptr<complex5DReg> wfld;
 };
 
 class Downward : public OneWay {
 public:
   Downward (const std::shared_ptr<hypercube>& domain, std::shared_ptr<complex4DReg> slow, std::shared_ptr<paramObj> par,
-  complex_vector* model = nullptr, complex_vector* data = nullptr) :
-  OneWay(domain, slow, par, model, data) {};
+  complex_vector* model = nullptr, complex_vector* data = nullptr, 
+  dim3 grid = 1, dim3 block = 1, cudaStream_t stream = 0) :
+  OneWay(domain, slow, par, model, data, grid, block, stream) {};
 
   void cu_forward (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
   void cu_adjoint (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
@@ -60,8 +51,9 @@ public:
 class Upward : public OneWay {
 public:
   Upward (const std::shared_ptr<hypercube>& domain, std::shared_ptr<complex4DReg> slow, std::shared_ptr<paramObj> par,
-  complex_vector* model = nullptr, complex_vector* data = nullptr) :
-  OneWay(domain, slow, par, model, data) {};
+  complex_vector* model = nullptr, complex_vector* data = nullptr, 
+  dim3 grid = 1, dim3 block = 1, cudaStream_t stream = 0) :
+  OneWay(domain, slow, par, model, data, grid, block, stream) {};
 
   void cu_forward (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
   void cu_adjoint (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
