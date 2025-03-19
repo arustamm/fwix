@@ -53,7 +53,7 @@ typedef struct complex_vector
     }
 
     void zero() {
-      CHECK_CUDA_ERROR(cudaMemset(mat, 0, sizeof(cuFloatComplex)*nelem));
+      CHECK_CUDA_ERROR(cudaMemsetAsync(mat, 0, sizeof(cuFloatComplex)*nelem, this->stream));
     }
 
     complex_vector* cloneSpace();

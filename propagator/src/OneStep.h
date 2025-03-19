@@ -48,9 +48,6 @@ protected:
   std::unique_ptr<PhaseShift> ps;
   std::unique_ptr<cuFFT2d> fft2d;
   std::unique_ptr<Selector> select;
-  
-  bool checkpoint = false;
-  std::vector<complex_vector*> saved_wfld;
 
 };
 

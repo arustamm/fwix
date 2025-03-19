@@ -19,3 +19,10 @@ typedef KernelLauncher<int, int*> Selector_launcher;
 __global__ void inj_forward(complex_vector* __restrict__ model, complex_vector* __restrict__ data, float* cx, float* cy, float* cz, int* ids);
 __global__ void inj_adjoint(complex_vector* __restrict__ model, complex_vector* __restrict__ data, float* cx, float* cy, float* cz, int* ids);
 typedef KernelLauncher<float*, float*, float*, int*> Injection_launcher;
+  // reflection
+  __global__ void refl_forward(complex_vector* __restrict__ model, complex_vector* __restrict__ data, cuFloatComplex*, cuFloatComplex*);
+  __global__ void refl_adjoint(complex_vector* __restrict__ model, complex_vector* __restrict__ data, cuFloatComplex*, cuFloatComplex*);
+  __global__ void refl_forward_in(complex_vector* __restrict__ model, complex_vector* __restrict__ data, cuFloatComplex*, cuFloatComplex*);
+  __global__ void refl_adjoint_in(complex_vector* __restrict__ model, complex_vector* __restrict__ data, cuFloatComplex*, cuFloatComplex*);
+  typedef KernelLauncher<cuFloatComplex*, cuFloatComplex*> Refl_launcher;
+

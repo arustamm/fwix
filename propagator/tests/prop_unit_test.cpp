@@ -8,6 +8,7 @@
 #include <OneStep.h>
 #include <Injection.h>
 #include <OneWay.h>
+#include <Reflect.h>
 
 #include <jsonParamObj.h>
 #include <random>
@@ -274,11 +275,11 @@ class UpDown_Test : public testing::Test {
     root["nref"] = 3;
     auto par = std::make_shared<jsonParamObj>(root);
 
-    down = std::make_unique<Downward>(domain, slow4d, par);
-    // up = std::make_unique<Upward>(domain, slow4d, par);
+    down = std::make_shared<Downward>(domain, slow4d, par);
+    up = std::make_unique<Upward>(domain, down, slow4d, par);
   }
 
-  std::unique_ptr<Downward> down;
+  std::shared_ptr<Downward> down;
   std::unique_ptr<Upward> up;
   int nx, ny, nz, nw, ns;
   std::shared_ptr<complex4DReg> wfld1, wfld2;
@@ -310,24 +311,105 @@ TEST_F(UpDown_Test, down_adj_wfld) {
   down->adjoint(false, wfld1, wfld2);
   ASSERT_EQ(std::real(wfld->dot(wfld)), 0.);
 }
-// TEST_F(UpDown_Test, up_fwd) { 
-//   for (int i=0; i < 3; ++i)
-//     ASSERT_NO_THROW(up->forward(false, wfld1, wfld2));
-// }
-
-// TEST_F(UpDown_Test, up_adj) { 
-//   for (int i=0; i < 3; ++i)
-//     ASSERT_NO_THROW(up->adjoint(false, wfld1, wfld2));
-// }
 
 TEST_F(UpDown_Test, down_dotTest) { 
   auto err = down->dotTest(verbose);
   ASSERT_TRUE(err.first <= tolerance);
   ASSERT_TRUE(err.second <= tolerance);
 }
-// TEST_F(UpDown_Test, up_dotTest) { 
-//   up->dotTest(verbose);
-// }
+
+
+
+TEST_F(UpDown_Test, up_fwd) { 
+  for (int i=0; i < 3; ++i)
+    ASSERT_NO_THROW(up->forward(false, wfld1, wfld2));
+}
+
+TEST_F(UpDown_Test, up_fwd_wfld) { 
+  auto wfld = up->get_wfld();
+  ASSERT_EQ(std::real(wfld->dot(wfld)), 0.);
+  wfld1->random();
+  up->forward(false, wfld1, wfld2);
+
+  ASSERT_TRUE(std::real(wfld->dot(wfld)) > 0.);
+}
+
+TEST_F(UpDown_Test, up_adj) { 
+  for (int i=0; i < 3; ++i)
+    ASSERT_NO_THROW(up->adjoint(false, wfld1, wfld2));
+}
+
+TEST_F(UpDown_Test, up_adj_wfld) { 
+  auto wfld = up->get_wfld();
+  ASSERT_EQ(std::real(wfld->dot(wfld)), 0.);
+  wfld2->random();
+  up->adjoint(false, wfld1, wfld2);
+  ASSERT_EQ(std::real(wfld->dot(wfld)), 0.);
+}
+
+TEST_F(UpDown_Test, up_dotTest) { 
+  auto err = up->dotTest(verbose);
+  ASSERT_TRUE(err.first <= tolerance);
+  ASSERT_TRUE(err.second <= tolerance);
+}
+
+
+class Reflect_Test : public testing::Test {
+  protected:
+   void SetUp() override {
+     nx = 100;
+     auto ax1 = axis(nx, 0.f, 0.01f);
+     ny = 100;
+     auto ax2 = axis(ny, 0.f, 0.01f);
+     nw = 10;
+     auto ax3 = axis(nw, 1.f, 1.f);
+     ns = 5;
+     auto ax4 = axis(ns, 0.f, 1.f);
+     nz = 10;
+     auto ax5 = axis(nz, 0.f, 0.01f);
+ 
+     auto domain = std::make_shared<hypercube>(ax1, ax2, ax3, ax4);
+     wfld1 = std::make_shared<complex4DReg>(domain);
+     wfld2 = std::make_shared<complex4DReg>(domain);
+ 
+     auto slow4d = std::make_shared<complex4DReg>(nx, ny, nw, nz);
+     slow4d->random();
+     auto den4d = std::make_shared<complex4DReg>(nx, ny, nw, nz);
+     den4d->random();
+     std::vector<std::shared_ptr<complex4DReg>> slow_den = {slow4d, den4d};
+
+    refl = std::make_unique<Reflect>(domain, slow_den);
+    refl->set_grid({32, 4, 4});
+    refl->set_block({16, 16, 4});
+    refl->set_depth(5);
+   }
+ 
+   std::unique_ptr<Reflect> refl;
+   int nx, ny, nz, nw, ns;
+   std::shared_ptr<complex4DReg> wfld1, wfld2;
+ };
+
+ TEST_F(Reflect_Test, set_depth) {
+  for (int i=nz-1; i > 0; --i) 
+  ASSERT_NO_THROW(refl->set_depth(i));
+}
+ 
+ TEST_F(Reflect_Test, fwd) { 
+   for (int i=0; i < 3; ++i)
+     ASSERT_NO_THROW(refl->forward(false, wfld1, wfld2));
+ }
+
+ TEST_F(Reflect_Test, adj) { 
+  for (int i=0; i < 3; ++i)
+    ASSERT_NO_THROW(refl->adjoint(false, wfld1, wfld2));
+}
+
+TEST_F(Reflect_Test, dot) { 
+  auto err = refl->dotTest(verbose);
+  ASSERT_TRUE(err.first <= tolerance);
+  ASSERT_TRUE(err.second <= tolerance);
+}
+
 
 int main(int argc, char **argv) {
   // Parse command-line arguments

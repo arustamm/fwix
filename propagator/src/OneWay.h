@@ -3,6 +3,7 @@
 #include <complex4DReg.h>
 #include <paramObj.h>
 #include <OneStep.h>
+#include <Reflect.h>
 
 // propagating wavefields in the volume [nz, ns, nw, ny, nx] from 0 to nz-1
 class OneWay : public CudaOperator<complex4DReg, complex4DReg>  {
@@ -31,6 +32,9 @@ public:
     CHECK_CUDA_ERROR(cudaHostUnregister(wfld->getVals()));
   };
 
+  void one_step_fwd(int iz, complex_vector* __restrict__ wfld);
+  void one_step_adj(int iz, complex_vector* __restrict__ wfld);
+
 protected:
   std::unique_ptr<OneStep> prop;
   std::vector<axis> m_ax;
@@ -50,11 +54,13 @@ public:
 
 class Upward : public OneWay {
 public:
-  Upward (const std::shared_ptr<hypercube>& domain, std::shared_ptr<complex4DReg> slow, std::shared_ptr<paramObj> par,
+  Upward (const std::shared_ptr<hypercube>& domain,
+  std::shared_ptr<complex4DReg> slow, std::shared_ptr<paramObj> par,
   complex_vector* model = nullptr, complex_vector* data = nullptr, 
   dim3 grid = 1, dim3 block = 1, cudaStream_t stream = 0) :
   OneWay(domain, slow, par, model, data, grid, block, stream) {};
 
   void cu_forward (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
   void cu_adjoint (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
+
 };

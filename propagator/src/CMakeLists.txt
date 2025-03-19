@@ -5,6 +5,7 @@ set(CU_SRC
 phase_shift.cu 
 selector.cu
 injection.cu
+reflect.cu
 )
 
 set(CU_INC 
@@ -21,6 +22,7 @@ PSPI.cpp
 NSPS.cpp
 Injection.cpp
 OneWay.cpp
+Reflect.cpp
 )
 
 set(CPP_INC 
@@ -30,6 +32,7 @@ Selector.h
 OneStep.h
 Injection.h
 OneWay.h
+Reflect.h
 )
 # add_library(cpp_objects OBJECT ${CPP_SRC} ${CPP_INC})
 # set_property(TARGET cpp_objects PROPERTY CUDA_SEPARABLE_COMPILATION ON)

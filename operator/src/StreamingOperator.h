@@ -8,12 +8,13 @@
 
 using namespace SEP;
 
-template <class Operator>
+template <class Operator, typename... Args>
 class StreamingOperator : public CudaOperator<typename Operator::DomainType, typename Operator::RangeType>
 {
 public:
 
 	StreamingOperator(const std::shared_ptr<hypercube>& domain, const std::shared_ptr<hypercube>& range, 
+								Args&&... args,
 								dim3 grid=1, dim3 block=1, int nstreams = 1) 
 	: CudaOperator<typename Operator::DomainType, typename Operator::RangeType>(domain, range) {
 
@@ -47,7 +48,7 @@ public:
 			CHECK_CUDA_ERROR(cudaStreamCreate(&s));
 			stream.push_back(s);
 			// create operators
-			ops.push_back(Operator(domain, subrange[i], this->model_vec, data_view[i], grid, block, stream[i]));
+			ops.push_back(Operator(domain, subrange[i], std::forward<Args>(args)..., this->model_vec, data_view[i], grid, block, stream[i]));
 		}
 	}
 
