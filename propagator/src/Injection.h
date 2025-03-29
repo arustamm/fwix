@@ -1,20 +1,23 @@
 #pragma once
 #include "CudaOperator.h"
-#include <complex5DReg.h>
+#include <complex4DReg.h>
 #include <complex2DReg.h>
 #include <prop_kernels.cuh>
 
 using namespace SEP;
 
 // operator injecting a wavelet or data into the set of wavefields: [Ns, Nw, Nx, Ny]
-class Injection : public CudaOperator<complex2DReg, complex5DReg>  {
+class Injection : public CudaOperator<complex2DReg, complex4DReg>  {
 public:
   
-  Injection(const std::shared_ptr<hypercube>& domain,const std::shared_ptr<hypercube>& range, complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid=1, dim3 block=1, cudaStream_t stream = 0);
+  Injection(const std::shared_ptr<hypercube>& domain,const std::shared_ptr<hypercube>& range, 
+    float oz, float dz,
+    complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid=1, dim3 block=1, cudaStream_t stream = 0);
 
   Injection(const std::shared_ptr<hypercube>& domain,const std::shared_ptr<hypercube>& range, 
-  const std::vector<float>& cx, const std::vector<float>& cy, const std::vector<float>& cz, const std::vector<int>& ids, 
-  complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid=1, dim3 block=1, cudaStream_t stream = 0);
+    float oz, float dz,
+    const std::vector<float>& cx, const std::vector<float>& cy, const std::vector<float>& cz, const std::vector<int>& ids, 
+    complex_vector* model = nullptr, complex_vector* data = nullptr, dim3 grid=1, dim3 block=1, cudaStream_t stream = 0);
   
   ~Injection() {
     CHECK_CUDA_ERROR(cudaFree(d_cx));
@@ -25,6 +28,10 @@ public:
 
   void cu_forward (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
   void cu_adjoint (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
+
+  void set_depth(int iz) {
+    this->iz = iz;
+  };
 
   void set_coords(const std::vector<float>& cx, const std::vector<float>& cy, const std::vector<float>& cz, const std::vector<int>& ids) {
     CHECK_CUDA_ERROR(cudaMemcpyAsync(d_cx, cx.data(), sizeof(float)*ntrace, cudaMemcpyHostToDevice, _stream_));
@@ -46,5 +53,6 @@ private:
   int *d_ids;
   const std::vector<float> _cx, _cy, _cz;
   const std::vector<int> _ids;
-  int ntrace;
+  int ntrace, iz;
+  float oz, dz;
 };

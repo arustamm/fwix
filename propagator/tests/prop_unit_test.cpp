@@ -200,10 +200,11 @@ class Injection_Test : public testing::Test {
     ns = 5;
     auto ax4 = axis(ns, 0.f, 1.f);
     nz = 10;
-    auto ax5 = axis(nz, 0.f, 0.01f);
+    float oz = 0.f;
+    float dz = 0.01f;
 
-    auto range = std::make_shared<hypercube>(ax1, ax2, ax3, ax4, ax5);
-    wfld = std::make_shared<complex5DReg>(range);
+    auto range = std::make_shared<hypercube>(ax1, ax2, ax3, ax4);
+    wfld = std::make_shared<complex4DReg>(range);
 
     int ntrace = 20;
     traces = std::make_shared<complex2DReg>(nw, ntrace);
@@ -214,12 +215,13 @@ class Injection_Test : public testing::Test {
     std::vector<float> cz(ntrace);
     std::vector<int> ids(ntrace);
 
+
     // Create a random number generator
     std::random_device rd;  // Obtain a random seed from the OS
     std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<> distrib_x(ax1.o + ax1.d, (ax1.n-2)*ax1.d);
     std::uniform_real_distribution<> distrib_y(ax2.o + ax2.d, (ax2.n-2)*ax2.d);
-    std::uniform_real_distribution<> distrib_z(ax5.o + ax5.d, (ax5.n-2)*ax5.d);
+    std::uniform_real_distribution<> distrib_z(oz + dz, (nz-2)*dz);
     std::uniform_real_distribution<> distrib_id(0, ns-1);
 
     // Generate the random coordinates
@@ -230,12 +232,13 @@ class Injection_Test : public testing::Test {
       ids[i] = distrib_id(gen);
     }
     
-    injection = std::make_unique<Injection>(domain, range, cx, cy, cz, ids);
+    injection = std::make_unique<Injection>(domain, range, oz, dz, cx, cy, cz, ids);
+    injection->set_depth(5);
   }
 
   std::unique_ptr<Injection> injection;
   int nx, ny, nz, nw, ns;
-  std::shared_ptr<complex5DReg> wfld;
+  std::shared_ptr<complex4DReg> wfld;
   std::shared_ptr<complex2DReg> traces;
 };
 
@@ -276,7 +279,7 @@ class UpDown_Test : public testing::Test {
     auto par = std::make_shared<jsonParamObj>(root);
 
     down = std::make_shared<Downward>(domain, slow4d, par);
-    up = std::make_unique<Upward>(domain, down, slow4d, par);
+    up = std::make_unique<Upward>(domain, slow4d, par);
   }
 
   std::shared_ptr<Downward> down;

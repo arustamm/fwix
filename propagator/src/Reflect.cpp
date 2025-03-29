@@ -4,17 +4,25 @@ Reflect::Reflect (const std::shared_ptr<hypercube>& domain, std::vector<std::sha
   complex_vector* model, complex_vector* data, 
   dim3 grid, dim3 block, cudaStream_t stream) :
 CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block, stream) {
+  initialize(slow_impedance[0]->getHyper());
+  set_background_model(slow_impedance);
+};
 
-  _slow = slow_impedance[0];
-  _density = slow_impedance[1];
+Reflect::Reflect (const std::shared_ptr<hypercube>& domain, std::shared_ptr<hypercube> slow_hyper, 
+  complex_vector* model, complex_vector* data, 
+  dim3 grid, dim3 block, cudaStream_t stream) :
+CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block, stream) {
+  initialize(slow_hyper);
+};
 
+void Reflect::initialize(std::shared_ptr<hypercube> slow_hyper) {
   _grid_ = {32, 4, 4};
   _block_ = {16, 16, 4};
 
-  nz = _slow->getHyper()->getAxis(4).n;
-  nw = _slow->getHyper()->getAxis(3).n;
-  ny = _slow->getHyper()->getAxis(2).n;
-  nx = _slow->getHyper()->getAxis(1).n;
+  nz = slow_hyper->getAxis(4).n;
+  nw = slow_hyper->getAxis(3).n;
+  ny = slow_hyper->getAxis(2).n;
+  nx = slow_hyper->getAxis(1).n;
   
   slice_size = nx * ny * nw;
   CHECK_CUDA_ERROR(cudaMalloc((void**)&d_slow_slice, 2*slice_size * sizeof(std::complex<float>)));
@@ -22,7 +30,7 @@ CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, bloc
 
   launcher = Refl_launcher(&refl_forward, &refl_adjoint, _grid_, _block_, _stream_);
   launcher_in_place = Refl_launcher(&refl_forward_in, &refl_adjoint_in, _grid_, _block_, _stream_);
-};
+}
 
 void Reflect::cu_forward(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
 

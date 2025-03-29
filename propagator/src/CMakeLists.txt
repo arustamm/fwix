@@ -23,6 +23,7 @@ NSPS.cpp
 Injection.cpp
 OneWay.cpp
 Reflect.cpp
+Propagator.cpp
 )
 
 set(CPP_INC 
@@ -33,12 +34,17 @@ OneStep.h
 Injection.h
 OneWay.h
 Reflect.h
+Propagator.h
 )
 # add_library(cpp_objects OBJECT ${CPP_SRC} ${CPP_INC})
 # set_property(TARGET cpp_objects PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 include_directories(${TBB_INCLUDE_DIRS})
-add_library(CudaWEM STATIC ${CU_SRC} ${CU_INC} ${CPP_SRC} ${CPP_INC})
+add_library(CudaWEM SHARED ${CU_SRC} ${CU_INC} ${CPP_SRC} ${CPP_INC})
+
 set_property(TARGET CudaWEM PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+set_property(TARGET CudaWEM PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+set_property(TARGET CudaWEM PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 target_link_libraries(CudaWEM
 						CudaOperator
 						genericCpp sepVector hypercube

@@ -10,12 +10,32 @@
 #include "OneStep.h"
 #include "Injection.h"
 #include "OneWay.h"
+#include "Propagator.h"
 
 namespace py = pybind11;
 
 using namespace SEP;
 
 PYBIND11_MODULE(pyCudaWEM, clsOps) {
+
+// py::class_<Propagator, std::shared_ptr<Propagator>>(clsOps, "Propagator")
+//     .def(py::init<const std::shared_ptr<hypercube>&,
+//                 const std::shared_ptr<hypercube>&,
+//                 std::shared_ptr<hypercube>,
+//                 std::shared_ptr<complex2DReg>,
+//                 const std::vector<float>&,
+//                 const std::vector<float>&,
+//                 const std::vector<float>&,
+//                 const std::vector<int>&,
+//                 const std::vector<float>&,
+//                 const std::vector<float>&,
+//                 const std::vector<float>&,
+//                 const std::vector<int>&,
+//                 std::shared_ptr<paramObj>>(), "Initialize Propagator")
+//     .def("nl_forward",
+//         (void (Propagator::*)(bool, std::shared_ptr<complex4DReg>&, std::shared_ptr<complex2DReg>&)) &
+//         Propagator::nl_forward,
+//         "Nonlinear forward operator of Propagator");
 
 py::class_<PhaseShift, std::shared_ptr<PhaseShift>>(clsOps, "PhaseShift")
     .def(py::init<std::shared_ptr<hypercube>, float, float &>(),
@@ -37,7 +57,7 @@ py::class_<PhaseShift, std::shared_ptr<PhaseShift>>(clsOps, "PhaseShift")
         });
 
 py::class_<RefSampler, std::shared_ptr<RefSampler>>(clsOps, "RefSampler")
-    .def(py::init<std::shared_ptr<complex4DReg>&, int>(),
+    .def(py::init<const std::shared_ptr<complex4DReg>&, int>(),
         "Initialize RefSampler")
 
     .def("get_ref_slow", [](RefSampler &self, int iz, int iref) {
@@ -94,23 +114,32 @@ py::class_<NSPS, std::shared_ptr<NSPS>>(clsOps, "NSPS")
 
 
 py::class_<Injection, std::shared_ptr<Injection>>(clsOps, "Injection")
-    .def(py::init<std::shared_ptr<hypercube>&, std::shared_ptr<hypercube>&, const std::vector<float>&, const std::vector<float>&, const std::vector<float>&, const std::vector<int>&>(),
+    .def(py::init<std::shared_ptr<hypercube>&, std::shared_ptr<hypercube>&, 
+        float&, float&,
+        const std::vector<float>&, const std::vector<float>&, const std::vector<float>&, const std::vector<int>&>(),
         "Initialize Injection")
 
     .def("forward",
-        (void (Injection::*)(bool, std::shared_ptr<complex2DReg>&, std::shared_ptr<complex5DReg>&)) &
+        (void (Injection::*)(bool, std::shared_ptr<complex2DReg>&, std::shared_ptr<complex4DReg>&)) &
         Injection::forward,
         "Forward operator of Injection")
 
     .def("adjoint",
-        (void (Injection::*)(bool, std::shared_ptr<complex2DReg>&, std::shared_ptr<complex5DReg>&)) &
+        (void (Injection::*)(bool, std::shared_ptr<complex2DReg>&, std::shared_ptr<complex4DReg>&)) &
         Injection::adjoint,
         "Adjoint operator of Injection")
+
+    .def("set_depth", 
+        (void (Injection::*)(int)) &
+        Injection::set_depth,
+        "Set depth of Injection")
 
     .def("set_coords", 
         (void (Injection::*)(const std::vector<float>&, const std::vector<float>&, const std::vector<float>&, const std::vector<int>&)) &
         Injection::set_coords,
-        "Set depth of Injection");
+        "Set coords of Injection");
+
+    
 
 py::class_<Downward, std::shared_ptr<Downward>>(clsOps, "Downward")
     .def(py::init<std::shared_ptr<hypercube>&, std::shared_ptr<complex4DReg>&, std::shared_ptr<paramObj>&>(),

@@ -13,8 +13,10 @@ set(CPP_INC StreamingOperator.h complex_vector.h CudaOperator.h FFT.h)
 # set_property(TARGET cpp_objects PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
 # link the objects together
-add_library(CudaOperator STATIC ${CPP_SRC} ${CPP_INC} ${CU_SRC} ${CU_INC})
+add_library(CudaOperator SHARED ${CPP_SRC} ${CPP_INC} ${CU_SRC} ${CU_INC})
 set_property(TARGET CudaOperator PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+set_property(TARGET CudaOperator PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+set_property(TARGET CudaOperator PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(CudaOperator
 						genericCpp sepVector hypercube
 						jsonCpp sep3d sep

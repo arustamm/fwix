@@ -12,7 +12,14 @@ public:
     complex_vector* model = nullptr, complex_vector* data = nullptr, 
     dim3 grid = 1, dim3 block = 1, cudaStream_t stream = 0);
 
+  Reflect (const std::shared_ptr<hypercube>& domain, std::shared_ptr<hypercube> slow_hyper, 
+    complex_vector* model = nullptr, complex_vector* data = nullptr, 
+    dim3 grid = 1, dim3 block = 1, cudaStream_t stream = 0);
+
   void set_depth(int iz) {
+    if (!isModelSet) 
+      throw std::runtime_error("Model not set in Reflection operator");
+
     // copy 2 slices of the model
     int offset = iz * slice_size;
     if (iz < nz-1) {
@@ -40,11 +47,21 @@ public:
   void cu_forward (complex_vector* __restrict__ model);
   void cu_adjoint (complex_vector* __restrict__ data);
 
+  void set_background_model(std::vector<std::shared_ptr<complex4DReg>> slow_impedance) {
+    _slow = slow_impedance[0];
+    _density = slow_impedance[1];
+    isModelSet = true;
+  }
+
 private:
+
+  void initialize(std::shared_ptr<hypercube> slow_hyper);
+
   std::shared_ptr<complex4DReg> _slow, _density;
   int nw, ny, nx, ns, nz;
   int slice_size;
   cuFloatComplex *d_slow_slice, *d_den_slice;
 
   Refl_launcher launcher, launcher_in_place;
+  bool isModelSet = false;
 };
