@@ -57,7 +57,7 @@ private:
   void initialize(std::shared_ptr<hypercube> domain, std::shared_ptr<hypercube> slow_hyper) {
     auto ax = domain->getAxes();
     m_ax = slow_hyper->getAxes();
-    // make a 5d wfld to store [nz, ns, nw, nx ,ny]
+    // make a 5d wfld to store [nz, ns, nw, ny ,nx]
     auto hyper = std::make_shared<hypercube>(ax[0], ax[1], ax[2], ax[3], m_ax[3]);
     wfld = std::make_shared<complex5DReg>(hyper);
     CHECK_CUDA_ERROR(cudaHostRegister(wfld->getVals(), this->getDomainSizeInBytes()*m_ax[3].n, cudaHostRegisterDefault));

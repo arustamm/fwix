@@ -12,57 +12,42 @@
 using namespace SEP;
 using namespace std::placeholders;
 
-RefSampler::RefSampler(std::shared_ptr<hypercube> slow_hyper, int nref) {
-	_nref_ = nref;
+RefSampler::RefSampler(std::shared_ptr<hypercube> slow_hyper, std::shared_ptr<paramObj> par) {
+	padx = par->getInt("padx", 0);
+	pady = par->getInt("pady", 0);
+
+	_nref_ = par->getInt("nref");
 	_nx_ = slow_hyper->getAxis(1).n;
 	_ny_ = slow_hyper->getAxis(2).n;
 	_nw_ = slow_hyper->getAxis(3).n;
 	_nz_ = slow_hyper->getAxis(4).n;
 
-	ref_labels.resize(boost::extents[_nz_][_nw_][_ny_][_nx_]);
+	ref_labels.resize(boost::extents[_nz_][_nw_][_ny_ + pady][_nx_ + padx]);
 	slow_ref.resize(boost::extents[_nz_][_nref_][_nw_]);
 };
 
-RefSampler::RefSampler(const std::shared_ptr<complex4DReg>& slow, int nref) : RefSampler(slow->getHyper(), nref) {
+RefSampler::RefSampler(const std::shared_ptr<complex4DReg>& slow, std::shared_ptr<paramObj> par) : RefSampler(slow->getHyper(), par) {
 	kmeans_sample(slow);
 };
 
 void RefSampler::kmeans_sample(const std::shared_ptr<complex4DReg>& slow) {
-	tbb::parallel_for(tbb::blocked_range2d<int>(0,_nw_,0,_nz_),
-		[=](const tbb::blocked_range2d<int> &r) {
-		for (int iz=r.cols().begin(); iz < r.cols().end(); iz++) {
-			for (int iw=r.rows().begin(); iw < r.rows().end(); iw++) {
-				int offset = (iw + iz*_nw_)*_nx_*_ny_;
-				std::complex<float>* ptr_slow_ref = slow->getVals() + offset;
-				int* ptr_labels = ref_labels.data() + offset; 
-				// prepare opencv matrices for processing
-				cv::Mat_<std::complex<float>> slow_slice(_nx_*_ny_, 1, ptr_slow_ref);
-				cv::Mat_<int> labels(_nx_*_ny_, 1, ptr_labels);
-				cv::Mat_<std::complex<float>> centers(_nref_, 1);
-				// stopping criteria
-				cv::TermCriteria criteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 100, 1e-12);
-				// compute centers & labels
-				double obj = cv::kmeans(slow_slice, _nref_, labels, criteria, 1, cv::KMEANS_PP_CENTERS, centers);
-				// copy to slow_ref array
-				for (int iref=0; iref < _nref_; ++iref) {
-					std::complex<float> sref = centers.at<std::complex<float>>(iref, 0);
-					slow_ref[iz][iref][iw] = sref;
-				}
-			}
+	tbb::parallel_for(tbb::blocked_range<int>(0,_nz_),
+		[=](const tbb::blocked_range<int> &r) {
+		for (int iz=r.begin(); iz < r.end(); iz++) {
+			sample_at_depth(slow, iz);
 		}
 	});
 }
 
 void RefSampler::sample_at_depth(std::shared_ptr<complex4DReg> slow, int iz) {
-	tbb::parallel_for(tbb::blocked_range2d<int>(0,_nw_,0,_nz_),
-	[=](const tbb::blocked_range2d<int> &r) {
-		for (int iw=r.rows().begin(); iw < r.rows().end(); iw++) {
+	tbb::parallel_for(tbb::blocked_range<int>(0,_nw_),
+	[=](const tbb::blocked_range<int> &r) {
+		for (int iw=r.begin(); iw < r.end(); iw++) {
 			int offset = (iw + iz*_nw_)*_nx_*_ny_;
 			std::complex<float>* ptr_slow_ref = slow->getVals() + offset;
-			int* ptr_labels = ref_labels.data() + offset; 
 			// prepare opencv matrices for processing
 			cv::Mat_<std::complex<float>> slow_slice(_nx_*_ny_, 1, ptr_slow_ref);
-			cv::Mat_<int> labels(_nx_*_ny_, 1, ptr_labels);
+			cv::Mat_<int> labels(_nx_*_ny_, 1);
 			cv::Mat_<std::complex<float>> centers(_nref_, 1);
 			// stopping criteria
 			cv::TermCriteria criteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 100, 1e-8);
@@ -72,6 +57,26 @@ void RefSampler::sample_at_depth(std::shared_ptr<complex4DReg> slow, int iz) {
 			for (int iref=0; iref < _nref_; ++iref) {
 				std::complex<float> sref = centers.at<std::complex<float>>(iref, 0);
 				slow_ref[iz][iref][iw] = sref;
+			}
+			// copy labels to ref_labels array
+			for (int iy=0; iy < _ny_; ++iy) {
+				for (int ix=0; ix < _nx_; ++ix) {
+						int flat_index = ix + iy*_nx_;
+						ref_labels[iz][iw][iy][ix] = labels.at<int>(flat_index);
+				}
+		}
+			// copy labels to padded region
+			for (int iy=_ny_; iy < _ny_ + pady; ++iy) {
+				for (int ix=0; ix < _nx_; ++ix) {
+					int index = ix + (_ny_-1)*_nx_;
+					ref_labels[iz][iw][iy][ix] = labels.at<int>(index);
+				}
+			}
+			// copy labels to padded region
+			for (int iy=0; iy < _ny_ + pady; ++iy) {
+				for (int ix=_nx_; ix < _nx_ + padx; ++ix) {
+					ref_labels[iz][iw][iy][ix] = ref_labels[iz][iw][iy][_nx_-1];
+				}
 			}
 		}
 	});

@@ -18,24 +18,24 @@ using namespace SEP;
 
 PYBIND11_MODULE(pyCudaWEM, clsOps) {
 
-// py::class_<Propagator, std::shared_ptr<Propagator>>(clsOps, "Propagator")
-//     .def(py::init<const std::shared_ptr<hypercube>&,
-//                 const std::shared_ptr<hypercube>&,
-//                 std::shared_ptr<hypercube>,
-//                 std::shared_ptr<complex2DReg>,
-//                 const std::vector<float>&,
-//                 const std::vector<float>&,
-//                 const std::vector<float>&,
-//                 const std::vector<int>&,
-//                 const std::vector<float>&,
-//                 const std::vector<float>&,
-//                 const std::vector<float>&,
-//                 const std::vector<int>&,
-//                 std::shared_ptr<paramObj>>(), "Initialize Propagator")
-//     .def("nl_forward",
-//         (void (Propagator::*)(bool, std::shared_ptr<complex4DReg>&, std::shared_ptr<complex2DReg>&)) &
-//         Propagator::nl_forward,
-//         "Nonlinear forward operator of Propagator");
+py::class_<Propagator, std::shared_ptr<Propagator>>(clsOps, "Propagator")
+    .def(py::init<const std::shared_ptr<hypercube>&,
+                const std::shared_ptr<hypercube>&,
+                std::shared_ptr<hypercube>,
+                std::shared_ptr<complex2DReg>,
+                const std::vector<float>&,
+                const std::vector<float>&,
+                const std::vector<float>&,
+                const std::vector<int>&,
+                const std::vector<float>&,
+                const std::vector<float>&,
+                const std::vector<float>&,
+                const std::vector<int>&,
+                std::shared_ptr<paramObj>>(), "Initialize Propagator")
+    .def("nl_forward",
+        (void (Propagator::*)(bool, std::vector<std::shared_ptr<complex4DReg>>&, std::shared_ptr<complex2DReg>&)) &
+        Propagator::nl_forward,
+        "Nonlinear forward operator of Propagator");
 
 py::class_<PhaseShift, std::shared_ptr<PhaseShift>>(clsOps, "PhaseShift")
     .def(py::init<std::shared_ptr<hypercube>, float, float &>(),
@@ -57,7 +57,7 @@ py::class_<PhaseShift, std::shared_ptr<PhaseShift>>(clsOps, "PhaseShift")
         });
 
 py::class_<RefSampler, std::shared_ptr<RefSampler>>(clsOps, "RefSampler")
-    .def(py::init<const std::shared_ptr<complex4DReg>&, int>(),
+    .def(py::init<const std::shared_ptr<complex4DReg>&, std::shared_ptr<paramObj>&>(),
         "Initialize RefSampler")
 
     .def("get_ref_slow", [](RefSampler &self, int iz, int iref) {
@@ -69,7 +69,7 @@ py::class_<RefSampler, std::shared_ptr<RefSampler>>(clsOps, "RefSampler")
 
     .def("get_ref_labels", [](RefSampler &self, int iz) {
         return py::array_t<int>(
-            {self._nw_, self._ny_, self._nx_}, // shape
+            {self._nw_, self._ny_ + self.pady, self._nx_+self.padx}, // shape
             self.get_ref_labels(iz) // pointer to data
         );
     });

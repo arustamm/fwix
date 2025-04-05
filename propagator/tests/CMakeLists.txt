@@ -11,7 +11,7 @@ prop_benchmark.cpp
 foreach(src ${TEST_SOURCES})
     string(REPLACE ".cpp" "" obj ${src})
     add_executable(${obj} ${src})
-    target_link_libraries(${obj} CudaOperator CudaWEM
+    target_link_libraries(${obj} CudaWEM CudaOperator
                                                                         genericCpp sepVector hypercube
                                                                         CUDA::cudart_static CUDA::cufft_static
                                                                         GTest::gtest_main GTest::gtest

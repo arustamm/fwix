@@ -34,10 +34,7 @@ public:
   };
 
   void set_coords(const std::vector<float>& cx, const std::vector<float>& cy, const std::vector<float>& cz, const std::vector<int>& ids) {
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_cx, cx.data(), sizeof(float)*ntrace, cudaMemcpyHostToDevice, _stream_));
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_cy, cy.data(), sizeof(float)*ntrace, cudaMemcpyHostToDevice, _stream_));
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_cz, cz.data(), sizeof(float)*ntrace, cudaMemcpyHostToDevice, _stream_));
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(d_ids, ids.data(), sizeof(int)*ntrace, cudaMemcpyHostToDevice, _stream_));
+    set_coords(cx.data(), cy.data(), cz.data(), ids.data());
   };
 
    void set_coords(const float* cx, const float* cy, const float* cz, const int* ids) {

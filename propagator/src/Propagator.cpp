@@ -18,21 +18,25 @@ Propagator::Propagator (const std::shared_ptr<hypercube>& domain, const std::sha
     // data_vec -> recorded data
     int nshot = find_number_of_shots(s_ids);
     ax = slow_hyper->getAxes();
+    // take care of padding 
+    ax[0].n += par->getInt("padx", 0);
+    ax[1].n += par->getInt("pady", 0);
+
     auto wfld_hyper = std::make_shared<hypercube>(ax[0], ax[1], ax[2], nshot);
 
     // inj_src will allocate data_vec(wavefield) on GPU
     inj_src = std::make_unique<Injection>(wavelet->getHyper(), wfld_hyper, slow_hyper->getAxis(4).o,  slow_hyper->getAxis(4).d, sx, sy, sz, s_ids, 
     this->model_vec, nullptr, _grid_, _block_, _stream_);
     // copy wavelet to inj_src->model_vec
-  CHECK_CUDA_ERROR(cudaMemcpyAsync(inj_src->model_vec->mat, wavelet->getVals(), inj_src->getDomainSizeInBytes(), cudaMemcpyHostToDevice, _stream_));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(inj_src->model_vec->mat, wavelet->getVals(), inj_src->getDomainSizeInBytes(), cudaMemcpyHostToDevice, _stream_));
+
     // in inj_rec we reuse the same data_vec (wavefield) as in inj_src and allocate a new model_vec (recorded data)
     inj_rec = std::make_unique<Injection>(range, wfld_hyper, slow_hyper->getAxis(4).o,  slow_hyper->getAxis(4).d, rx, ry, rz, r_ids, 
                                           this->data_vec, inj_src->data_vec, _grid_, _block_, _stream_);                                          
     
-    ref = std::make_unique<RefSampler>(slow_hyper, par->getInt("nref"));
+    ref = std::make_unique<RefSampler>(slow_hyper, par);
     down = std::make_unique<Downward>(wfld_hyper, slow_hyper, par, ref, inj_src->data_vec, inj_src->data_vec, _grid_, _block_, _stream_);
     up = std::make_unique<Upward>(wfld_hyper, slow_hyper, par, ref, inj_src->data_vec, inj_src->data_vec, _grid_, _block_, _stream_);
-    // TODO: reflect to take nullptr as slowness and add set_background_model function
     reflect = std::make_unique<Reflect>(wfld_hyper, slow_hyper, inj_src->data_vec, inj_src->data_vec, _grid_, _block_, _stream_);
 
 };
@@ -55,7 +59,9 @@ void Propagator::nl_forward(bool add, std::vector<std::shared_ptr<complex4DReg>>
   CHECK_CUDA_ERROR(cudaHostRegister(model[1]->getVals(), getDomainSizeInBytes(), cudaHostRegisterDefault));
   CHECK_CUDA_ERROR(cudaHostRegister(data->getVals(), getRangeSizeInBytes(), cudaHostRegisterDefault));
 
-	if(!add) data->zero();
+  // always zero out the internal data_vec that records the data
+	this->data_vec->zero();
+  if(!add) data->zero();
 
   // update model and notify all operators
   this->set_background_model(model);
@@ -68,10 +74,10 @@ void Propagator::nl_forward(bool add, std::vector<std::shared_ptr<complex4DReg>>
     inj_src->set_depth(iz);
     inj_src->cu_forward(true, inj_src->model_vec, down->data_vec);
     inj_rec->set_depth(iz);
-    inj_rec->cu_adjoint(true, inj_rec->model_vec, down->data_vec);
+    inj_rec->cu_adjoint(true, this->data_vec, down->data_vec);
     // wait for the reference sampling to finish
     sample_ref.wait();
-    // propagate wavefield
+    // // propagate wavefield
     down->one_step_fwd(iz, down->data_vec);
   }
 
@@ -79,7 +85,7 @@ void Propagator::nl_forward(bool add, std::vector<std::shared_ptr<complex4DReg>>
   // up + reflect and record
   // TODO: I can reuse the wfld_k or _wfld_ref from the oneway operators for reflected wavefield
   // for (int iz=ax[3].n-1; iz > 0; --iz) {
-  //   CHECK_CUDA_ERROR(cudaMemcpyAsync(model_k->mat, down->get_wfld()->getVals() + offset, getDomainSizeInBytes(), cudaMemcpyHostToDevice, _stream_));
+  //   CHECK_CUDA_ERROR(cudaMemcpyAsync(down->model_k->mat, down->get_wfld()->getVals() + offset, getDomainSizeInBytes(), cudaMemcpyHostToDevice, _stream_));
 	// 	reflect->set_depth(iz);
 	// 	reflect->cu_forward(true, reflected, wfld);
 	// 	inj_rec->set_depth(iz);
@@ -87,7 +93,7 @@ void Propagator::nl_forward(bool add, std::vector<std::shared_ptr<complex4DReg>>
   //   up->one_step_fwd(iz, wfld);
 	// }
 
-  CHECK_CUDA_ERROR(cudaMemcpyAsync(data->getVals(), data_vec->mat, getRangeSizeInBytes(), cudaMemcpyDeviceToHost, _stream_));
+  CHECK_CUDA_ERROR(cudaMemcpyAsync(data->getVals(), this->data_vec->mat, getRangeSizeInBytes(), cudaMemcpyDeviceToHost, _stream_));
 
 		// unpin the memory
   CHECK_CUDA_ERROR(cudaHostUnregister(model[0]->getVals()));

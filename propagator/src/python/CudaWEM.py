@@ -6,19 +6,22 @@ from pyVector import superVector
 
 
 class Propagator(Op.Operator):
-	def __init__(self,model, data, slowness, wavelet, par):
+	# model here refers to the slowness model
+	# data refers to the recorded traces
+	def __init__(self, model, data, wavelet, par, geometry):
 		self.setDomainRange(model,data)
-		geometry = par.pars["geometry"]
+		# cpp code needs the hypercube corresponding to the injected source traces
 		self.cppMode = pyCudaWEM.Propagator(
-			model.getHyper().cppMode, data.getHyper().cppMode, 
-			slowness.getHyper().cppMode, wavelet.cppMode,
+			wavelet.getHyper().cppMode, data.getHyper().cppMode, 
+			model.vecs[0].getHyper().cppMode, wavelet.cppMode,
 			geometry["sx"], geometry["sy"], geometry["sz"], geometry["s_ids"],
 			geometry["rx"], geometry["ry"], geometry["rz"], geometry["r_ids"],
 			par.cppMode
 		)
 
 	def forward(self,add,model,data):
-		self.cppMode.forward(add, model.cppMode, data.cppMode)
+		mod = [m.cppMode for m in model]
+		self.cppMode.nl_forward(add, mod, data.cppMode)
 
 
 class PhaseShift(Op.Operator):
@@ -37,8 +40,8 @@ class PhaseShift(Op.Operator):
 
 
 class RefSampler:
-	def __init__(self, slow, nref):
-		self.cppMode = pyCudaWEM.RefSampler(slow.cppMode, nref)
+	def __init__(self, slow, par):
+		self.cppMode = pyCudaWEM.RefSampler(slow.cppMode, par.cppMode)
 
 	def get_ref_slow(self, iz, iref):
 		return self.cppMode.get_ref_slow(iz,iref)

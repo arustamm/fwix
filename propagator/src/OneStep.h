@@ -15,7 +15,7 @@ public:
   CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block, stream) {
 
     initialize(domain, slow->getHyper(), par);
-    _ref_ = std::make_shared<RefSampler>(slow, _nref_);
+    _ref_ = std::make_shared<RefSampler>(slow, par);
   };
 
   OneStep (const std::shared_ptr<hypercube>& domain, std::shared_ptr<hypercube> slow_hyper, std::shared_ptr<paramObj> par, 
@@ -26,7 +26,7 @@ public:
   
       initialize(domain, slow_hyper, par);
       if (ref == nullptr)
-        _ref_ = std::make_shared<RefSampler>(slow_hyper, _nref_);
+        _ref_ = std::make_shared<RefSampler>(slow_hyper, par);
       else
         _ref_ = ref;
     };
@@ -57,7 +57,7 @@ protected:
 private:
   void initialize(std::shared_ptr<hypercube> domain, std::shared_ptr<hypercube> slow_hyper, std::shared_ptr<paramObj> par) {
     _nref_ = par->getInt("nref",1);
-    ps = std::make_unique<PhaseShift>(domain, slow_hyper->getAxis(4).d, par->getFloat("eps",0.04), model_vec, data_vec, _grid_, _block_, _stream_);
+    ps = std::make_unique<PhaseShift>(domain, slow_hyper->getAxis(4).d, par->getFloat("eps",0.), model_vec, data_vec, _grid_, _block_, _stream_);
     _wfld_ref = model_vec->cloneSpace();
     model_k = model_vec->cloneSpace();
   

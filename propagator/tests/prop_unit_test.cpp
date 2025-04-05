@@ -124,8 +124,8 @@ TEST_F(PSPI_Test, cu_inplace) {
   CHECK_CUDA_ERROR(cudaMemcpy(out->getVals(), pspi->model_vec->mat, pspi->getDomainSizeInBytes(), cudaMemcpyDeviceToHost));
   
   double after = std::real(out->dot(out));
-  ASSERT_TRUE(after != before);
-  ASSERT_TRUE(after > 0.);
+  ASSERT_TRUE(after != before) << "The output is the same as the input";
+  ASSERT_TRUE(after > 0.) << "The output is zero";
 }
 
 // TEST_F(PSPI_Test, inv) { 
@@ -159,7 +159,12 @@ class Selector_Test : public testing::Test {
     nref = 3;
 
     auto slow4d = std::make_shared<complex4DReg>(nx, ny, nw, nz);
-    ref = std::make_shared<RefSampler>(slow4d, nref);
+    
+    Json::Value root;
+    root["nref"] = nref;
+    auto par = std::make_shared<jsonParamObj>(root);
+
+    ref = std::make_shared<RefSampler>(slow4d, par);
     slow4d->random();
 
     // create a vector of slowness values for each frequency

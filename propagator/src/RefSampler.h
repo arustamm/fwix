@@ -4,6 +4,7 @@
 #include "complex2DReg.h"
 #include "complex3DReg.h"
 #include "complex1DReg.h"
+#include "paramObj.h"
 #include "boost/multi_array.hpp"
 #include  "opencv2/core.hpp"
 #include <future>
@@ -16,16 +17,16 @@ class RefSampler
 	{
 	public:
 
-		RefSampler(std::shared_ptr<hypercube> slow_hyper, int nref);
-		RefSampler(const std::shared_ptr<complex4DReg>& slow, int nref);
+		RefSampler(std::shared_ptr<hypercube> slow_hyper, std::shared_ptr<paramObj> par);
+		RefSampler(const std::shared_ptr<complex4DReg>& slow, std::shared_ptr<paramObj> par);
 
 		inline std::complex<float>* get_ref_slow(int iz, int iref) {return slow_ref.data() + (iref + iz*_nref_)*_nw_;}
-		inline int* get_ref_labels(int iz) { return ref_labels.data() + iz*_nw_*_ny_*_nx_;}
+		inline int* get_ref_labels(int iz) { return ref_labels.data() + iz*_nw_*(_ny_+pady)*(_nx_+padx);}
 
 		void sample_at_depth(std::shared_ptr<complex4DReg> slow, int iz);
 		std::future<void> sample_at_depth_async(std::shared_ptr<complex4DReg> slow, int iz);
 
-		int _nx_, _ny_, _nref_, _nz_, _nw_;
+		int _nx_, _ny_, _nref_, _nz_, _nw_, padx, pady;
 		
 	private:
 		
