@@ -6,6 +6,7 @@
 #include <PhaseShift.h>
 #include <Selector.h>
 #include <FFT.h>
+#include <Taper.h>
   // operator to propagate 2D wavefield ONCE in (x-y) for multiple sources and freqs (ns-nw) 
 class OneStep : public CudaOperator<complex4DReg, complex4DReg>  {
 public:
@@ -53,10 +54,12 @@ protected:
   std::unique_ptr<PhaseShift> ps;
   std::unique_ptr<cuFFT2d> fft2d;
   std::unique_ptr<Selector> select;
+  std::unique_ptr<Taper> taper;
 
 private:
   void initialize(std::shared_ptr<hypercube> domain, std::shared_ptr<hypercube> slow_hyper, std::shared_ptr<paramObj> par) {
     _nref_ = par->getInt("nref",1);
+    taper = std::make_unique<Taper>(domain, par, model_vec, data_vec, _grid_, _block_, _stream_);
     ps = std::make_unique<PhaseShift>(domain, slow_hyper->getAxis(4).d, par->getFloat("eps",0.), model_vec, data_vec, _grid_, _block_, _stream_);
     _wfld_ref = model_vec->cloneSpace();
     model_k = model_vec->cloneSpace();

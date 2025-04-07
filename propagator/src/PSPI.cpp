@@ -7,7 +7,7 @@ void PSPI::cu_forward(bool add, complex_vector* __restrict__ model, complex_vect
 
 	  if(!add) data->zero();
 
-		// pad->forward(model,model_pad,0);
+		// taper->forward(model,model_k,0);
 	  fft2d->cu_forward(0,model,model_k);
 
 		for (int iref=0; iref < _nref_; ++iref) {
@@ -66,8 +66,8 @@ void PSPI::cu_adjoint(bool add, complex_vector* __restrict__ model, complex_vect
 
 void PSPI::cu_forward(complex_vector* __restrict__ model) {
 
-		// pad->forward(model,model_pad,0);
-	  fft2d->cu_forward(0,model,model_k);
+		taper->cu_forward(0, model,model_k);
+	  fft2d->cu_forward(model_k);
 		model->zero();
 
 		for (int iref=0; iref < _nref_; ++iref) {

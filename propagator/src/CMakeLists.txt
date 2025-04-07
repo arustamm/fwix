@@ -6,6 +6,7 @@ phase_shift.cu
 selector.cu
 injection.cu
 reflect.cu
+taper.cu
 )
 
 set(CU_INC 
@@ -35,6 +36,7 @@ Injection.h
 OneWay.h
 Reflect.h
 Propagator.h
+Taper.h
 )
 # add_library(cpp_objects OBJECT ${CPP_SRC} ${CPP_INC})
 # set_property(TARGET cpp_objects PROPERTY CUDA_SEPARABLE_COMPILATION ON)
