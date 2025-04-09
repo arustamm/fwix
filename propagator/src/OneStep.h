@@ -45,6 +45,8 @@ public:
   };
   int& get_depth() {return _iz_;};
 
+  complex_vector* get_ref_wfld() {return _wfld_ref;};
+
 protected:
   complex_vector* _wfld_ref;
   complex_vector* model_k;

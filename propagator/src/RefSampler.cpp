@@ -68,8 +68,7 @@ void RefSampler::sample_at_depth(std::shared_ptr<complex4DReg> slow, int iz) {
 			// copy labels to padded region
 			for (int iy=_ny_; iy < _ny_ + pady; ++iy) {
 				for (int ix=0; ix < _nx_; ++ix) {
-					int index = ix + (_ny_-1)*_nx_;
-					ref_labels[iz][iw][iy][ix] = labels.at<int>(index);
+					ref_labels[iz][iw][iy][ix] = ref_labels[iz][iw][_ny_-1][ix];
 				}
 			}
 			// copy labels to padded region

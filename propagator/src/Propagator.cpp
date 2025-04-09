@@ -55,8 +55,8 @@ void Propagator::set_background_model(std::vector<std::shared_ptr<complex4DReg>>
 // slowness + impedance model -> to recorded data
 void Propagator::nl_forward(bool add, std::vector<std::shared_ptr<complex4DReg>> model, std::shared_ptr<complex2DReg> data) {
 
-  CHECK_CUDA_ERROR(cudaHostRegister(model[0]->getVals(), getDomainSizeInBytes(), cudaHostRegisterDefault));
-  CHECK_CUDA_ERROR(cudaHostRegister(model[1]->getVals(), getDomainSizeInBytes(), cudaHostRegisterDefault));
+  CHECK_CUDA_ERROR(cudaHostRegister(model[0]->getVals(), model[0]->getHyper()->getN123()*sizeof(std::complex<float>), cudaHostRegisterDefault));
+  CHECK_CUDA_ERROR(cudaHostRegister(model[1]->getVals(), model[1]->getHyper()->getN123()*sizeof(std::complex<float>), cudaHostRegisterDefault));
   CHECK_CUDA_ERROR(cudaHostRegister(data->getVals(), getRangeSizeInBytes(), cudaHostRegisterDefault));
 
   // always zero out the internal data_vec that records the data
@@ -68,7 +68,7 @@ void Propagator::nl_forward(bool add, std::vector<std::shared_ptr<complex4DReg>>
   // for (batches in z)
   // down and record
   std::future<void> sample_ref;
-	for (int iz=0; iz < ax[3].n-1; ++iz) {
+	for (int iz=0; iz < ax[3].n; ++iz) {
     // sample reference slowness at current depth and return a future
     sample_ref = ref->sample_at_depth_async(model[0], iz);
     inj_src->set_depth(iz);
@@ -81,17 +81,20 @@ void Propagator::nl_forward(bool add, std::vector<std::shared_ptr<complex4DReg>>
     down->one_step_fwd(iz, down->data_vec);
   }
 
+  up->data_vec->zero();
   // no need to sample reference slowness again as the RefSampler already holds all the refernce velocities
   // up + reflect and record
-  // TODO: I can reuse the wfld_k or _wfld_ref from the oneway operators for reflected wavefield
-  // for (int iz=ax[3].n-1; iz > 0; --iz) {
-  //   CHECK_CUDA_ERROR(cudaMemcpyAsync(down->model_k->mat, down->get_wfld()->getVals() + offset, getDomainSizeInBytes(), cudaMemcpyHostToDevice, _stream_));
-	// 	reflect->set_depth(iz);
-	// 	reflect->cu_forward(true, reflected, wfld);
-	// 	inj_rec->set_depth(iz);
-  //   inj_rec->cu_adjoint(true, data, wfld);
-  //   up->one_step_fwd(iz, wfld);
-	// }
+  for (int iz=ax[3].n-1; iz >= 0; --iz) {
+    auto down_wfld = down->prop->get_ref_wfld();
+    down_wfld->zero();
+    int offset = iz * down->get_wfld_slice_size();
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(down_wfld->mat, down->get_wfld()->getVals() + offset, down->get_wfld_slice_size_in_bytes(), cudaMemcpyHostToDevice, _stream_));
+		reflect->set_depth(iz);
+		reflect->cu_forward(true, down_wfld, up->data_vec);
+		inj_rec->set_depth(iz);
+    inj_rec->cu_adjoint(true, this->data_vec, up->data_vec);
+    up->one_step_fwd(iz, up->data_vec);
+	}
 
   CHECK_CUDA_ERROR(cudaMemcpyAsync(data->getVals(), this->data_vec->mat, getRangeSizeInBytes(), cudaMemcpyDeviceToHost, _stream_));
 

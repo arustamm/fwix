@@ -7,7 +7,7 @@
 class ComplexVectorTest : public testing::Test {
  protected:
   void SetUp() override {
-    n1 = 100;
+    n1 = 101;
     n2 = 100;
     n3 = 20;
     n4 = 10;
@@ -32,8 +32,8 @@ TEST_F(ComplexVectorTest, check_flat_index) {
   int ind3[] = {0,1,0,0};
   int dims[] = {n4, n3, n2, n1};
   ASSERT_EQ(ND_TO_FLAT(ind1, dims), 1);
-  ASSERT_EQ(ND_TO_FLAT(ind2, dims), 101);
-  ASSERT_EQ(ND_TO_FLAT(ind3, dims), 10000);
+  ASSERT_EQ(ND_TO_FLAT(ind2, dims), 102);
+  ASSERT_EQ(ND_TO_FLAT(ind3, dims), 10100);
 }
 
 TEST_F(ComplexVectorTest, check_complex_vector) { 

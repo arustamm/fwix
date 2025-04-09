@@ -23,21 +23,23 @@ public:
     // copy 2 slices of the model
     int offset = iz * slice_size;
     if (iz < nz-1) {
-      CHECK_CUDA_ERROR(cudaMemcpyAsync(d_slow_slice, _slow->getVals() + offset, 2*slice_size*sizeof(std::complex<float>), cudaMemcpyHostToDevice, _stream_));
-      CHECK_CUDA_ERROR(cudaMemcpyAsync(d_den_slice, _density->getVals() + offset, 2*slice_size*sizeof(std::complex<float>), cudaMemcpyHostToDevice, _stream_));
+      CHECK_CUDA_ERROR(cudaMemcpyAsync(d_slow_slice->mat, _slow->getVals() + offset, 2*slice_size*sizeof(std::complex<float>), cudaMemcpyHostToDevice, _stream_));
+      CHECK_CUDA_ERROR(cudaMemcpyAsync(d_den_slice->mat, _density->getVals() + offset, 2*slice_size*sizeof(std::complex<float>), cudaMemcpyHostToDevice, _stream_));
     }
     else {
-      CHECK_CUDA_ERROR(cudaMemcpyAsync(d_slow_slice, _slow->getVals() + offset, slice_size*sizeof(std::complex<float>), cudaMemcpyHostToDevice, _stream_));
-      CHECK_CUDA_ERROR(cudaMemcpyAsync(d_den_slice, _density->getVals() + offset, slice_size*sizeof(std::complex<float>), cudaMemcpyHostToDevice, _stream_));
+      CHECK_CUDA_ERROR(cudaMemcpyAsync(d_slow_slice->mat, _slow->getVals() + offset, slice_size*sizeof(std::complex<float>), cudaMemcpyHostToDevice, _stream_));
+      CHECK_CUDA_ERROR(cudaMemcpyAsync(d_den_slice->mat, _density->getVals() + offset, slice_size*sizeof(std::complex<float>), cudaMemcpyHostToDevice, _stream_));
       // add the same layer to effectively have 0 reflection coeffecient
-      CHECK_CUDA_ERROR(cudaMemcpyAsync(d_slow_slice + slice_size, d_slow_slice, slice_size*sizeof(std::complex<float>), cudaMemcpyDeviceToDevice, _stream_));
-      CHECK_CUDA_ERROR(cudaMemcpyAsync(d_den_slice + slice_size, d_den_slice, slice_size*sizeof(std::complex<float>), cudaMemcpyDeviceToDevice, _stream_));
+      CHECK_CUDA_ERROR(cudaMemcpyAsync(d_slow_slice->mat + slice_size, d_slow_slice->mat, slice_size*sizeof(std::complex<float>), cudaMemcpyDeviceToDevice, _stream_));
+      CHECK_CUDA_ERROR(cudaMemcpyAsync(d_den_slice->mat + slice_size, d_den_slice->mat, slice_size*sizeof(std::complex<float>), cudaMemcpyDeviceToDevice, _stream_));
     }
     
   }
 
   virtual ~Reflect() { 
+    d_slow_slice->~complex_vector();
     CHECK_CUDA_ERROR(cudaFree(d_slow_slice));
+    d_den_slice->~complex_vector();
     CHECK_CUDA_ERROR(cudaFree(d_den_slice));
    };
 
@@ -60,7 +62,7 @@ private:
   std::shared_ptr<complex4DReg> _slow, _density;
   int nw, ny, nx, ns, nz;
   int slice_size;
-  cuFloatComplex *d_slow_slice, *d_den_slice;
+  complex_vector *d_slow_slice, *d_den_slice;
 
   Refl_launcher launcher, launcher_in_place;
   bool isModelSet = false;

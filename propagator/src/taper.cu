@@ -48,9 +48,6 @@ __global__ void taper_forward(complex_vector* __restrict__ model, complex_vector
         } else if (ix >= NX-tapx && ix < NX) {
           weight_x = 0.5f * (1.0f + cosf(M_PI * (ix - NX + tapx) / tapx));
         }
-        else {
-          weight_x = 0.0f;
-        }
         
         // Calculate taper weight for Y dimension
         float weight_y = 1.0f;
@@ -58,9 +55,6 @@ __global__ void taper_forward(complex_vector* __restrict__ model, complex_vector
           weight_y = 0.5f * (1.0f - cosf(M_PI * iy / tapy));
         } else if (iy >= NY-tapy && iy < NY) {
           weight_y = 0.5f * (1.0f + cosf(M_PI * (iy - NY + tapy) / tapy));
-        }
-        else {
-          weight_y = 0.0f;
         }
         
         // Combine weights - use minimum for smooth corners

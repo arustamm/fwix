@@ -83,6 +83,11 @@ py::class_<PSPI, std::shared_ptr<PSPI>>(clsOps, "PSPI")
         PSPI::forward,
         "Forward operator of PSPI")
 
+    .def("forward",
+        (void (PSPI::*)(std::shared_ptr<complex4DReg>&)) &
+        PSPI::forward,
+        "Forward operator of PSPI")
+
     .def("adjoint",
         (void (PSPI::*)(bool, std::shared_ptr<complex4DReg>&, std::shared_ptr<complex4DReg>&)) &
         PSPI::adjoint,

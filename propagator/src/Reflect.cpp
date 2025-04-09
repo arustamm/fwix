@@ -19,14 +19,15 @@ void Reflect::initialize(std::shared_ptr<hypercube> slow_hyper) {
   _grid_ = {32, 4, 4};
   _block_ = {16, 16, 4};
 
-  nz = slow_hyper->getAxis(4).n;
+  nz = slow_hyper->getAxis(4).n;;
   nw = slow_hyper->getAxis(3).n;
   ny = slow_hyper->getAxis(2).n;
   nx = slow_hyper->getAxis(1).n;
+
+  d_slow_slice = make_complex_vector(std::make_shared<hypercube>(nx, ny, nw, 2), _grid_, _block_, _stream_);
+  d_den_slice = make_complex_vector(std::make_shared<hypercube>(nx, ny, nw, 2), _grid_, _block_, _stream_);
   
   slice_size = nx * ny * nw;
-  CHECK_CUDA_ERROR(cudaMalloc((void**)&d_slow_slice, 2*slice_size * sizeof(std::complex<float>)));
-  CHECK_CUDA_ERROR(cudaMalloc((void**)&d_den_slice, 2*slice_size * sizeof(std::complex<float>)));
 
   launcher = Refl_launcher(&refl_forward, &refl_adjoint, _grid_, _block_, _stream_);
   launcher_in_place = Refl_launcher(&refl_forward_in, &refl_adjoint_in, _grid_, _block_, _stream_);

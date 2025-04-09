@@ -13,7 +13,7 @@ dim3 grid, dim3 block, cudaStream_t stream)
   SIZE = getDomain()->getN123();
 
   int rank = 2;
-  int dims[2] = {NX, NY};
+  int dims[2] = {NY, NX};
 
   cufftPlanMany(&plan, rank, dims, NULL, 1, 0, NULL, 1, 0, CUFFT_C2C, BATCH);
   // set the callback to make it orthogonal

@@ -20,11 +20,11 @@ __global__ void inj_forward(complex_vector* __restrict__ model, complex_vector* 
 __global__ void inj_adjoint(complex_vector* __restrict__ model, complex_vector* __restrict__ data, float* cx, float* cy, float* cz, int* ids, float oz, float dz, int iz);
 typedef KernelLauncher<float*, float*, float*, int*, float, float, int> Injection_launcher;
   // reflection
-  __global__ void refl_forward(complex_vector* __restrict__ model, complex_vector* __restrict__ data, cuFloatComplex*, cuFloatComplex*);
-  __global__ void refl_adjoint(complex_vector* __restrict__ model, complex_vector* __restrict__ data, cuFloatComplex*, cuFloatComplex*);
-  __global__ void refl_forward_in(complex_vector* __restrict__ model, complex_vector* __restrict__ data, cuFloatComplex*, cuFloatComplex*);
-  __global__ void refl_adjoint_in(complex_vector* __restrict__ model, complex_vector* __restrict__ data, cuFloatComplex*, cuFloatComplex*);
-  typedef KernelLauncher<cuFloatComplex*, cuFloatComplex*> Refl_launcher;
+  __global__ void refl_forward(complex_vector* __restrict__ model, complex_vector* __restrict__ data, complex_vector*, complex_vector*);
+  __global__ void refl_adjoint(complex_vector* __restrict__ model, complex_vector* __restrict__ data, complex_vector*, complex_vector*);
+  __global__ void refl_forward_in(complex_vector* __restrict__ model, complex_vector* __restrict__ data, complex_vector*, complex_vector*);
+  __global__ void refl_adjoint_in(complex_vector* __restrict__ model, complex_vector* __restrict__ data, complex_vector*, complex_vector*);
+  typedef KernelLauncher<complex_vector*, complex_vector*> Refl_launcher;
 // taper
 __global__ void taper_forward(complex_vector* __restrict__ model, complex_vector* __restrict__ data, int tapx, int tapy);
 typedef KernelLauncher<int, int> Taper_launcher;

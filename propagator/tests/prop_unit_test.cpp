@@ -9,6 +9,7 @@
 #include <Injection.h>
 #include <OneWay.h>
 #include <Reflect.h>
+#include <Propagator.h>
 
 #include <jsonParamObj.h>
 #include <random>
@@ -303,7 +304,7 @@ TEST_F(UpDown_Test, down_fwd_wfld) {
   ASSERT_EQ(std::real(wfld->dot(wfld)), 0.);
   wfld1->random();
   down->forward(false, wfld1, wfld2);
-
+  
   ASSERT_TRUE(std::real(wfld->dot(wfld)) > 0.);
 }
 
@@ -417,6 +418,78 @@ TEST_F(Reflect_Test, dot) {
   ASSERT_TRUE(err.first <= tolerance);
   ASSERT_TRUE(err.second <= tolerance);
 }
+
+class Propagator_Test : public testing::Test {
+  protected:
+   void SetUp() override {
+     nx = 100;
+     auto ax1 = axis(nx, 0.f, 0.01f);
+     ny = 100;
+     auto ax2 = axis(ny, 0.f, 0.01f);
+     nw = 10;
+     auto ax3 = axis(nw, 1.f, 1.f);
+     ns = 5;
+     auto ax4 = axis(ns, 0.f, 1.f);
+     nz = 10;
+     float oz = 0.f;
+     float dz = 0.01f;
+ 
+     int ntrace = 20;
+     traces = std::make_shared<complex2DReg>(nw, ntrace);
+     auto domain = traces->getHyper();
+
+     auto sources = traces->clone();
+     sources->random();
+
+     auto slow4d = std::make_shared<complex4DReg>(nx, ny, nw, nz);
+     slow4d->set(1.f);
+     auto den4d = std::make_shared<complex4DReg>(nx, ny, nw, nz);
+     den4d->set(1.f);
+    slow_den = {slow4d, den4d};
+ 
+     std::vector<float> cx(ntrace);
+     std::vector<float> cy(ntrace);
+     std::vector<float> cz(ntrace);
+     std::vector<int> ids(ntrace);
+
+     // Create a random number generator
+     std::random_device rd;  // Obtain a random seed from the OS
+     std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+     std::uniform_real_distribution<> distrib_x(ax1.o + ax1.d, (ax1.n-2)*ax1.d);
+     std::uniform_real_distribution<> distrib_y(ax2.o + ax2.d, (ax2.n-2)*ax2.d);
+     std::uniform_real_distribution<> distrib_z(oz + dz, (nz-2)*dz);
+     std::uniform_real_distribution<> distrib_id(0, ns-1);
+ 
+     // Generate the random coordinates
+     for (int i = 0; i < ntrace; ++i) {
+       cx[i] = distrib_x(gen);
+       cy[i] = distrib_y(gen);
+       cz[i] = distrib_z(gen);
+       ids[i] = distrib_id(gen);
+     }
+
+     Json::Value root;
+    root["nref"] = 3;
+    root["padx"] = nx;
+    root["pady"] = ny;
+    root["taperx"] = 10;
+    root["tapery"] = 10;
+    auto par = std::make_shared<jsonParamObj>(root);
+     
+     prop = std::make_unique<Propagator>(domain, domain, 
+      slow4d->getHyper(), sources, cx, cy, cz, ids, cx, cy, cz, ids, par);
+   }
+   
+   std::unique_ptr<Propagator> prop;
+   int nx, ny, nz, nw, ns;
+   std::shared_ptr<complex2DReg> traces;
+   std::vector<std::shared_ptr<complex4DReg>> slow_den;
+ };
+ 
+ TEST_F(Propagator_Test, fwd) { 
+   for (int i=0; i < 3; ++i)
+     ASSERT_NO_THROW(prop->nl_forward(false, slow_den, traces));
+ }
 
 
 int main(int argc, char **argv) {

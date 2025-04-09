@@ -4,8 +4,8 @@
 using namespace SEP;
 
 void OneWay::one_step_fwd(int iz, complex_vector* __restrict__ wfld) {
-	int offset = iz * this->getDomainSize();
-	CHECK_CUDA_ERROR(cudaMemcpyAsync(this->wfld->getVals() + offset, wfld->mat, getDomainSizeInBytes(), cudaMemcpyDeviceToHost, _stream_));
+	int offset = iz * this->get_wfld_slice_size();
+	CHECK_CUDA_ERROR(cudaMemcpyAsync(this->wfld->getVals() + offset, wfld->mat, this->get_wfld_slice_size_in_bytes(), cudaMemcpyDeviceToHost, _stream_));
 	// propagate one step by changing the state of the wavefield
 	prop->set_depth(iz);
 	prop->cu_forward(wfld);

@@ -5,7 +5,7 @@
 #include <KernelLauncher.cuh>
 #include <KernelLauncher.cu>
 
-template class KernelLauncher<cuFloatComplex*, cuFloatComplex*>;
+template class KernelLauncher<complex_vector*, complex_vector*>;
 
 __device__ cuFloatComplex csqrtf(cuFloatComplex z) {
   float a = z.x;
@@ -23,13 +23,13 @@ __device__ cuFloatComplex csqrtf(cuFloatComplex z) {
 }
 
 __global__ void refl_forward(complex_vector* __restrict__ model, complex_vector* __restrict__ data, 
-  cuFloatComplex* slow_slice, cuFloatComplex* den_slice) {
+  complex_vector* slow_slice, complex_vector* den_slice) {
 
-  int NX = model->n[0];
-  int NY = model->n[1];
+  int NX = slow_slice->n[0];
+  int NY = slow_slice->n[1];
   int NW = model->n[2];
   int NS = model->n[3];
-  int wfld_dims[] = {NS, NW, NY, NX};
+  int wfld_dims[] = {NS, NW, model->n[1], model->n[0]};
   int slice_dims[] = {NW, NY, NX};
 
   int ix0 = threadIdx.x + blockDim.x*blockIdx.x;
@@ -53,8 +53,8 @@ __global__ void refl_forward(complex_vector* __restrict__ model, complex_vector*
           int wfld_ind = ND_TO_FLAT(wfld_nd_ind, wfld_dims);
 
           cuFloatComplex r = cuCdivf(
-            cuCsubf(cuCmulf(den_slice[slice_ind_1], csqrtf(slow_slice[slice_ind_0])), cuCmulf(den_slice[slice_ind_0], csqrtf(slow_slice[slice_ind_1]))),
-            cuCaddf(cuCmulf(den_slice[slice_ind_1], csqrtf(slow_slice[slice_ind_0])),cuCmulf(den_slice[slice_ind_0],csqrtf(slow_slice[slice_ind_1])))
+            cuCsubf(cuCmulf(den_slice->mat[slice_ind_1], csqrtf(slow_slice->mat[slice_ind_0])), cuCmulf(den_slice->mat[slice_ind_0], csqrtf(slow_slice->mat[slice_ind_1]))),
+            cuCaddf(cuCmulf(den_slice->mat[slice_ind_1], csqrtf(slow_slice->mat[slice_ind_0])),cuCmulf(den_slice->mat[slice_ind_0],csqrtf(slow_slice->mat[slice_ind_1])))
           );
 
           data->mat[wfld_ind] = cuCaddf(data->mat[wfld_ind], cuCmulf(model->mat[wfld_ind], r));  
@@ -65,13 +65,13 @@ __global__ void refl_forward(complex_vector* __restrict__ model, complex_vector*
 };
 
 __global__ void refl_adjoint(complex_vector* __restrict__ model, complex_vector* __restrict__ data, 
-  cuFloatComplex* slow_slice, cuFloatComplex* den_slice) {
+  complex_vector* slow_slice, complex_vector* den_slice) {
 
-  int NX = model->n[0];
-  int NY = model->n[1];
+  int NX = slow_slice->n[0];
+  int NY = slow_slice->n[1];
   int NW = model->n[2];
   int NS = model->n[3];
-  int wfld_dims[] = {NS, NW, NY, NX};
+  int wfld_dims[] = {NS, NW, model->n[1], model->n[0]};
   int slice_dims[] = {NW, NY, NX};
 
   int ix0 = threadIdx.x + blockDim.x*blockIdx.x;
@@ -95,8 +95,8 @@ __global__ void refl_adjoint(complex_vector* __restrict__ model, complex_vector*
           int wfld_ind = ND_TO_FLAT(wfld_nd_ind, wfld_dims);
 
           cuFloatComplex r = cuCdivf(
-            cuCsubf(cuCmulf(den_slice[slice_ind_1], csqrtf(slow_slice[slice_ind_0])), cuCmulf(den_slice[slice_ind_0], csqrtf(slow_slice[slice_ind_1]))),
-            cuCaddf(cuCmulf(den_slice[slice_ind_1], csqrtf(slow_slice[slice_ind_0])),cuCmulf(den_slice[slice_ind_0],csqrtf(slow_slice[slice_ind_1])))
+            cuCsubf(cuCmulf(den_slice->mat[slice_ind_1], csqrtf(slow_slice->mat[slice_ind_0])), cuCmulf(den_slice->mat[slice_ind_0], csqrtf(slow_slice->mat[slice_ind_1]))),
+            cuCaddf(cuCmulf(den_slice->mat[slice_ind_1], csqrtf(slow_slice->mat[slice_ind_0])),cuCmulf(den_slice->mat[slice_ind_0],csqrtf(slow_slice->mat[slice_ind_1])))
           );
 
           model->mat[wfld_ind] = cuCaddf(model->mat[wfld_ind], cuCmulf(data->mat[wfld_ind],cuConjf(r)));  
@@ -107,13 +107,13 @@ __global__ void refl_adjoint(complex_vector* __restrict__ model, complex_vector*
 };
 
 __global__ void refl_forward_in(complex_vector* __restrict__ model, complex_vector* __restrict__ data, 
-  cuFloatComplex* slow_slice, cuFloatComplex* den_slice) {
+  complex_vector* slow_slice, complex_vector* den_slice) {
 
-  int NX = model->n[0];
-  int NY = model->n[1];
+  int NX = slow_slice->n[0];
+  int NY = slow_slice->n[1];
   int NW = model->n[2];
   int NS = model->n[3];
-  int wfld_dims[] = {NS, NW, NY, NX};
+  int wfld_dims[] = {NS, NW, model->n[1], model->n[0]};
   int slice_dims[] = {NW, NY, NX};
 
   int ix0 = threadIdx.x + blockDim.x*blockIdx.x;
@@ -137,8 +137,8 @@ __global__ void refl_forward_in(complex_vector* __restrict__ model, complex_vect
           int wfld_ind = ND_TO_FLAT(wfld_nd_ind, wfld_dims);
 
           cuFloatComplex r = cuCdivf(
-            cuCsubf(cuCmulf(den_slice[slice_ind_1], csqrtf(slow_slice[slice_ind_0])), cuCmulf(den_slice[slice_ind_0], csqrtf(slow_slice[slice_ind_1]))),
-            cuCaddf(cuCmulf(den_slice[slice_ind_1], csqrtf(slow_slice[slice_ind_0])),cuCmulf(den_slice[slice_ind_0],csqrtf(slow_slice[slice_ind_1])))
+            cuCsubf(cuCmulf(den_slice->mat[slice_ind_1], csqrtf(slow_slice->mat[slice_ind_0])), cuCmulf(den_slice->mat[slice_ind_0], csqrtf(slow_slice->mat[slice_ind_1]))),
+            cuCaddf(cuCmulf(den_slice->mat[slice_ind_1], csqrtf(slow_slice->mat[slice_ind_0])),cuCmulf(den_slice->mat[slice_ind_0],csqrtf(slow_slice->mat[slice_ind_1])))
           );
           
           data->mat[wfld_ind] = cuCmulf(model->mat[wfld_ind], r);  
@@ -149,13 +149,13 @@ __global__ void refl_forward_in(complex_vector* __restrict__ model, complex_vect
 };
 
 __global__ void refl_adjoint_in(complex_vector* __restrict__ model, complex_vector* __restrict__ data, 
-  cuFloatComplex* slow_slice, cuFloatComplex* den_slice) {
+  complex_vector* slow_slice, complex_vector* den_slice) {
 
-  int NX = data->n[0];
-  int NY = data->n[1];
+  int NX = slow_slice->n[0];
+  int NY = slow_slice->n[1];
   int NW = data->n[2];
   int NS = data->n[3];
-  int wfld_dims[] = {NS, NW, NY, NX};
+  int wfld_dims[] = {NS, NW, data->n[1], data->n[0]};
   int slice_dims[] = {NW, NY, NX};
 
   int ix0 = threadIdx.x + blockDim.x*blockIdx.x;
@@ -179,8 +179,8 @@ __global__ void refl_adjoint_in(complex_vector* __restrict__ model, complex_vect
           int wfld_ind = ND_TO_FLAT(wfld_nd_ind, wfld_dims);
 
           cuFloatComplex r = cuCdivf(
-            cuCsubf(cuCmulf(den_slice[slice_ind_1], csqrtf(slow_slice[slice_ind_0])), cuCmulf(den_slice[slice_ind_0], csqrtf(slow_slice[slice_ind_1]))),
-            cuCaddf(cuCmulf(den_slice[slice_ind_1], csqrtf(slow_slice[slice_ind_0])),cuCmulf(den_slice[slice_ind_0],csqrtf(slow_slice[slice_ind_1])))
+            cuCsubf(cuCmulf(den_slice->mat[slice_ind_1], csqrtf(slow_slice->mat[slice_ind_0])), cuCmulf(den_slice->mat[slice_ind_0], csqrtf(slow_slice->mat[slice_ind_1]))),
+            cuCaddf(cuCmulf(den_slice->mat[slice_ind_1], csqrtf(slow_slice->mat[slice_ind_0])),cuCmulf(den_slice->mat[slice_ind_0],csqrtf(slow_slice->mat[slice_ind_1])))
           );
 
           model->mat[wfld_ind] = cuCmulf(data->mat[wfld_ind],cuConjf(r));  
