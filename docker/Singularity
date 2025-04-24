@@ -73,7 +73,8 @@ python3 -m pip install notebook h5py numba scipy matplotlib
 # Install additional Python packages
 python3 -m pip install dask distributed dask_jobqueue && \
 python3 -m pip install "holoviews[recommended]" && \
-python3 -m pip install numba
+python3 -m pip install numba &&\
+pip install --extra-index-url https://pypi.anaconda.org/rapidsai-wheels-nightly/simple --pre jupyterlab_nvdashboard
 
 # Install Arrow
 wget https://apache.jfrog.io/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb && \
@@ -107,7 +108,7 @@ export PATH=~/.local/bin:$PATH
 export sepflags="-O3 -ffast-math -DNDEBUG -DBOOST_DISABLE_ASSERTS -funroll-loops"
 export TZ=America/Los_Angeles
 export PATH=~/.local/bin:$PATH
-export PYTHONPATH=/opt/python-solver/GenericSolver/python:/opt/SEP/lib/python3.10PYTHONPATH=/opt/python-solver/GenericSolver/python:/opt/SEP/lib/python3.10:$PYTHONPATH
+export PYTHONPATH=/opt/python-solver/GenericSolver/python:/opt/SEP/lib/python3.10:$PYTHONPATH
 export LD_LIBRARY_PATH=/opt/SEP/lib
 export PATH=$PATH:/opt/SEP/bin
 export PYTHON=/usr/bin/python3.10

@@ -5,7 +5,7 @@ using namespace SEP;
 cuFFT2d::cuFFT2d(const std::shared_ptr<hypercube>& domain, complex_vector* model, complex_vector* data, 
 dim3 grid, dim3 block, cudaStream_t stream)
 : CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block, stream) {
-  // create plan
+  // create plan  
   
   NX = getDomain()->getAxis(1).n;
   NY = getDomain()->getAxis(2).n;

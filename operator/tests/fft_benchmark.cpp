@@ -44,7 +44,7 @@ public:
 	_data = (reinterpret_cast<fftwf_complex*>(data->getVals()));
 	fftwf_execute_dft(_fwd_plan,_model,_data);
 
-	data->scale(1./std::sqrt(NX*NY));
+	// data->scale(1./std::sqrt(NX*NY));
 
 };
 
@@ -89,7 +89,8 @@ BENCHMARK_REGISTER_F(cpuFFTBenchmark, forward_host)
 -> Args({1, 1, 1000, 1000}) 
 -> Args({1, 10, 1000, 1000}) 
 -> Args({1, 100, 1000, 1000}) 
--> Iterations(10)
+-> Args({1, 1000, 1000, 1000}) 
+-> Iterations(5)
 ->UseManualTime();
 
 
@@ -127,8 +128,9 @@ BENCHMARK_DEFINE_F(FFTBenchmark, forward_host)(benchmark::State& state){
 BENCHMARK_REGISTER_F(FFTBenchmark, forward_host)
 -> Args({1, 1, 1000, 1000}) 
 -> Args({1, 10, 1000, 1000}) 
--> Args({1, 100, 1000, 1000}) 
--> Iterations(10)
+-> Args({1, 100, 1000, 1000})
+-> Args({1, 1000, 1000, 1000})  
+-> Iterations(5)
 -> UseManualTime();
 
 BENCHMARK_DEFINE_F(FFTBenchmark, forward_device)(benchmark::State& state){
@@ -147,7 +149,8 @@ BENCHMARK_REGISTER_F(FFTBenchmark, forward_device)
 -> Args({1, 1, 1000, 1000}) 
 -> Args({1, 10, 1000, 1000}) 
 -> Args({1, 100, 1000, 1000}) 
--> Iterations(10)
+-> Args({1, 1000, 1000, 1000}) 
+-> Iterations(5)
 -> UseManualTime();
 
 BENCHMARK_MAIN();

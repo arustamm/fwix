@@ -35,7 +35,6 @@ Propagator::Propagator (const std::shared_ptr<hypercube>& domain, const std::sha
                                           this->data_vec, inj_src->data_vec, _grid_, _block_, _stream_);                                          
     
     ref = std::make_unique<RefSampler>(slow_hyper, par);
-    // TODO: dont have to allocate temp wavefields twice for up and down, can reuse instead
     down = std::make_unique<Downward>(wfld_hyper, slow_hyper, par, ref, inj_src->data_vec, inj_src->data_vec, _grid_, _block_, _stream_);
     up = std::make_unique<Upward>(wfld_hyper, slow_hyper, par, ref, inj_src->data_vec, inj_src->data_vec, _grid_, _block_, _stream_);
     reflect = std::make_unique<Reflect>(wfld_hyper, slow_hyper, inj_src->data_vec, inj_src->data_vec, _grid_, _block_, _stream_);
@@ -85,10 +84,10 @@ void Propagator::nl_forward(bool add, std::vector<std::shared_ptr<complex4DReg>>
   up->data_vec->zero();
   // no need to sample reference slowness again as the RefSampler already holds all the refernce velocities
   // up + reflect and record
-  auto down_wfld = down->prop->get_ref_wfld();
   for (int iz=ax[3].n-1; iz >= 0; --iz) {
+    auto down_wfld = down->prop->get_ref_wfld();
     down_wfld->zero();
-    size_t offset = iz * down->get_wfld_slice_size();
+    int offset = iz * down->get_wfld_slice_size();
     CHECK_CUDA_ERROR(cudaMemcpyAsync(down_wfld->mat, down->get_wfld()->getVals() + offset, down->get_wfld_slice_size_in_bytes(), cudaMemcpyHostToDevice, _stream_));
 		reflect->set_depth(iz);
 		reflect->cu_forward(true, down_wfld, up->data_vec);

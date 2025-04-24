@@ -15,9 +15,9 @@
 class PS_Test : public testing::Test {
  protected:
   void SetUp() override {
-    n1 = 1000;
-    n2 = 1000;
-    n3 = 10;
+    n1 = 500;
+    n2 = 200;
+    n3 = 100;
     n4 = 10;
 
     // create a vector of slowness values for each frequency

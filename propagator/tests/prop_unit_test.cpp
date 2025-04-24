@@ -43,13 +43,13 @@ TEST_F(PS_Test, fwd) {
   auto out = space4d->clone();
   ps->set_grid({32, 4, 4});
   ps->set_block({16, 16, 4});
-  for (int i=0; i < 100; ++i)
+  for (int i=0; i < 3; ++i)
     ps->forward(false, space4d, out);
 }
 
 TEST_F(PS_Test, adj) { 
   auto out = space4d->clone();
-  for (int i=0; i < 100; ++i)
+  for (int i=0; i < 3; ++i)
     ps->adjoint(false, out, space4d);
 }
 
@@ -78,7 +78,7 @@ class PSPI_Test : public testing::Test {
     nx = 100;
     ny = 100;
     nz = 10;
-    nw = 10;
+    nw = 15;
     ns = 5;
     int nref = 3;
 
@@ -155,8 +155,8 @@ class Selector_Test : public testing::Test {
     nx = 100;
     ny = 100;
     nz = 10;
-    nw = 10;
-    ns = 1;
+    nw = 15;
+    ns = 10;
     nref = 3;
 
     auto slow4d = std::make_shared<complex4DReg>(nx, ny, nw, nz);
@@ -266,9 +266,9 @@ class UpDown_Test : public testing::Test {
     auto ax1 = axis(nx, 0.f, 0.01f);
     ny = 100;
     auto ax2 = axis(ny, 0.f, 0.01f);
-    nw = 10;
+    nw = 15;
     auto ax3 = axis(nw, 1.f, 1.f);
-    ns = 5;
+    ns = 10;
     auto ax4 = axis(ns, 0.f, 1.f);
     nz = 10;
     auto ax5 = axis(nz, 0.f, 0.01f);
@@ -422,15 +422,15 @@ TEST_F(Reflect_Test, dot) {
 class Propagator_Test : public testing::Test {
   protected:
    void SetUp() override {
-     nx = 100;
+     nx = 500;
      auto ax1 = axis(nx, 0.f, 0.01f);
-     ny = 100;
+     ny = 200;
      auto ax2 = axis(ny, 0.f, 0.01f);
-     nw = 10;
+     nw = 120;
      auto ax3 = axis(nw, 1.f, 1.f);
-     ns = 5;
+     ns = 1;
      auto ax4 = axis(ns, 0.f, 1.f);
-     nz = 10;
+     nz = 100;
      float oz = 0.f;
      float dz = 0.01f;
  
@@ -469,7 +469,7 @@ class Propagator_Test : public testing::Test {
      }
 
      Json::Value root;
-    root["nref"] = 3;
+    root["nref"] = 11;
     root["padx"] = nx;
     root["pady"] = ny;
     root["taperx"] = 10;

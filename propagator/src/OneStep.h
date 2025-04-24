@@ -39,18 +39,18 @@ public:
     CHECK_CUDA_ERROR(cudaFree(model_k));
   };
 
-  void set_depth(int iz) {
+  void set_depth(size_t iz) {
     _iz_ = iz;
     select->set_labels(_ref_->get_ref_labels(iz));
   };
-  int& get_depth() {return _iz_;};
+  size_t get_depth() {return _iz_;};
 
   complex_vector* get_ref_wfld() {return _wfld_ref;};
 
 protected:
   complex_vector* _wfld_ref;
   complex_vector* model_k;
-  int _nref_, _iz_;
+  size_t _nref_, _iz_;
   float _dz_;
   std::shared_ptr<RefSampler> _ref_;
   std::unique_ptr<PhaseShift> ps;

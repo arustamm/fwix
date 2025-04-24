@@ -10,7 +10,7 @@ __global__ void ps_forward(complex_vector* __restrict__ model, complex_vector* _
   float* __restrict__  w2, float* __restrict__  kx, float* __restrict__  ky, cuFloatComplex* __restrict__ slow_ref, float dz, float eps) {
 
   float a, b, c, re, im;
-  int flat_ind;
+  size_t flat_ind;
   int NX = model->n[0];
   int NY = model->n[1];
   int NW = model->n[2];
@@ -40,8 +40,8 @@ __global__ void ps_forward(complex_vector* __restrict__ model, complex_vector* _
           im = -sqrtf((c-a)/2);
         }
         else {
-          re = -sqrt((c+a)/2);
-				  im = -sqrt((c-a)/2);
+          re = -sqrtf((c+a)/2);
+				  im = -sqrtf((c-a)/2);
         }
         
         // convert 4d index to flat index
@@ -69,7 +69,7 @@ __global__ void ps_forward(complex_vector* __restrict__ model, complex_vector* _
 __global__ void ps_adjoint(complex_vector* __restrict__ model, complex_vector* __restrict__ data, float* w2, float* kx, float* ky, cuFloatComplex* slow_ref, float dz, float eps) {
   
   float a, b, c, re, im;
-  int flat_ind;
+  size_t flat_ind;
 
   int NX = model->n[0];
   int NY = model->n[1];
@@ -100,8 +100,8 @@ __global__ void ps_adjoint(complex_vector* __restrict__ model, complex_vector* _
           im = -sqrtf((c-a)/2);
         }
         else {
-          re = -sqrt((c+a)/2);
-				  im = -sqrt((c-a)/2);
+          re = -sqrtf((c+a)/2);
+				  im = -sqrtf((c-a)/2);
         }
 
           // convert 4d index to flat index
@@ -128,7 +128,7 @@ __global__ void ps_adjoint(complex_vector* __restrict__ model, complex_vector* _
 __global__ void ps_inverse(complex_vector* __restrict__ model, complex_vector* __restrict__ data, float* w2, float* kx, float* ky, cuFloatComplex* slow_ref, float dz, float eps) {
   
   float a, b, c, re, im;
-  int flat_ind;
+  size_t flat_ind;
 
   int NX = model->n[0];
   int NY = model->n[1];

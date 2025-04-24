@@ -68,7 +68,8 @@ RUN python3 -m pip install notebook h5py numba scipy matplotlib
 # Install additional Python packages
 RUN python3 -m pip install dask distributed dask_jobqueue && \
     python3 -m pip install "holoviews[recommended]" && \
-    python3 -m pip install numba
+    python3 -m pip install numba &&\
+    pip install --extra-index-url https://pypi.anaconda.org/rapidsai-wheels-nightly/simple --pre jupyterlab_nvdashboard
 
 # Install Arrow
 RUN wget https://apache.jfrog.io/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb && \

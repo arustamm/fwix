@@ -21,7 +21,7 @@ public:
       throw std::runtime_error("Model not set in Reflection operator");
 
     // copy 2 slices of the model
-    int offset = iz * slice_size;
+    size_t offset = iz * slice_size;
     if (iz < nz-1) {
       CHECK_CUDA_ERROR(cudaMemcpyAsync(d_slow_slice->mat, _slow->getVals() + offset, 2*slice_size*sizeof(std::complex<float>), cudaMemcpyHostToDevice, _stream_));
       CHECK_CUDA_ERROR(cudaMemcpyAsync(d_den_slice->mat, _density->getVals() + offset, 2*slice_size*sizeof(std::complex<float>), cudaMemcpyHostToDevice, _stream_));
@@ -61,7 +61,7 @@ private:
 
   std::shared_ptr<complex4DReg> _slow, _density;
   int nw, ny, nx, ns, nz;
-  int slice_size;
+  size_t slice_size;
   complex_vector *d_slow_slice, *d_den_slice;
 
   Refl_launcher launcher, launcher_in_place;

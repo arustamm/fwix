@@ -76,11 +76,11 @@ __global__ void inj_forward(complex_vector* __restrict__ model, complex_vector* 
       int idx_cy1cx1[] = {id, iw, iy + 1, ix + 1};
 
       // Convert indices to flat indices
-      int ind = ND_TO_FLAT(idx_ind, mdims);
-      int cy0cx0 = ND_TO_FLAT(idx_cy0cx0, dims);
-      int cy0cx1 = ND_TO_FLAT(idx_cy0cx1, dims);
-      int cy1cx0 = ND_TO_FLAT(idx_cy1cx0, dims);
-      int cy1cx1 = ND_TO_FLAT(idx_cy1cx1, dims);
+      size_t ind = ND_TO_FLAT(idx_ind, mdims);
+      size_t cy0cx0 = ND_TO_FLAT(idx_cy0cx0, dims);
+      size_t cy0cx1 = ND_TO_FLAT(idx_cy0cx1, dims);
+      size_t cy1cx0 = ND_TO_FLAT(idx_cy1cx0, dims);
+      size_t cy1cx1 = ND_TO_FLAT(idx_cy1cx1, dims);
 
       cuFloatComplex val = model->mat[ind];
 
@@ -164,11 +164,11 @@ __global__ void inj_adjoint(complex_vector* __restrict__ model, complex_vector* 
       int idx_cy1cx1[] = {id, iw, iy + 1, ix + 1};
       
       // Convert indices to flat indices
-      int ind = ND_TO_FLAT(idx_ind, mdims);
-      int cy0cx0 = ND_TO_FLAT(idx_cy0cx0, dims);
-      int cy0cx1 = ND_TO_FLAT(idx_cy0cx1, dims);
-      int cy1cx0 = ND_TO_FLAT(idx_cy1cx0, dims);
-      int cy1cx1 = ND_TO_FLAT(idx_cy1cx1, dims);
+      size_t ind = ND_TO_FLAT(idx_ind, mdims);
+      size_t cy0cx0 = ND_TO_FLAT(idx_cy0cx0, dims);
+      size_t cy0cx1 = ND_TO_FLAT(idx_cy0cx1, dims);
+      size_t cy1cx0 = ND_TO_FLAT(idx_cy1cx0, dims);
+      size_t cy1cx1 = ND_TO_FLAT(idx_cy1cx1, dims);
 
       cuFloatComplex val = cuCmulf(data->mat[cy0cx0], w[0]);
       val = cuCaddf(val, cuCmulf(data->mat[cy0cx1], w[1])); 

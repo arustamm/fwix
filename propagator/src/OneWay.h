@@ -12,7 +12,7 @@ public:
   dim3 grid = 1, dim3 block = 1, cudaStream_t stream = 0) :
   CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block, stream) {
 
-    initialize(domain, slow->getHyper(), par);
+    initialize(domain, slow->getHyper());
     // for now only support PSPI propagator
     prop = std::make_unique<PSPI>(domain, slow, par, model_vec, data_vec, _grid_, _block_, _stream_);
 
@@ -25,7 +25,7 @@ public:
     dim3 grid = 1, dim3 block = 1, cudaStream_t stream = 0) :
     CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block, stream) {
   
-      initialize(domain, slow_hyper, par);
+      initialize(domain, slow_hyper);
       // for now only support PSPI propagator
       prop = std::make_unique<PSPI>(domain, slow_hyper, par, ref, model_vec, data_vec, _grid_, _block_, _stream_);
   
@@ -49,7 +49,7 @@ public:
   std::unique_ptr<OneStep> prop;
 
   size_t get_wfld_slice_size() {
-    return wfld->getHyper()->getN123() / m_ax[3].n;
+    return static_cast<size_t>(wfld->getHyper()->getN123() / m_ax[3].n);
   }
 
   size_t get_wfld_slice_size_in_bytes() {
@@ -63,14 +63,9 @@ protected:
   std::shared_ptr<complex4DReg> _slow_;
 
 private:
-  void initialize(std::shared_ptr<hypercube> domain, std::shared_ptr<hypercube> slow_hyper, std::shared_ptr<paramObj> par) {
+  void initialize(std::shared_ptr<hypercube> domain, std::shared_ptr<hypercube> slow_hyper) {
     auto ax = domain->getAxes();
     m_ax = slow_hyper->getAxes();
-    int padx = par->getInt("padx", 0);
-    int pady = par->getInt("pady", 0);
-    // unpad the hypercube to saving the wavefield in RAM
-    ax[0].n -= padx;
-    ax[1].n -= pady;
     // make a 5d wfld to store [nz, ns, nw, ny ,nx]
     auto hyper = std::make_shared<hypercube>(ax[0], ax[1], ax[2], ax[3], m_ax[3]);
     wfld = std::make_shared<complex5DReg>(hyper);

@@ -13,14 +13,14 @@ using namespace SEP;
 using namespace std::placeholders;
 
 RefSampler::RefSampler(std::shared_ptr<hypercube> slow_hyper, std::shared_ptr<paramObj> par) {
-	padx = par->getInt("padx", 0);
-	pady = par->getInt("pady", 0);
+	padx = static_cast<size_t>(par->getInt("padx", 0));
+	pady = static_cast<size_t>(par->getInt("pady", 0));
 
-	_nref_ = par->getInt("nref");
-	_nx_ = slow_hyper->getAxis(1).n;
-	_ny_ = slow_hyper->getAxis(2).n;
-	_nw_ = slow_hyper->getAxis(3).n;
-	_nz_ = slow_hyper->getAxis(4).n;
+	_nref_ = static_cast<size_t>(par->getInt("nref"));
+	_nx_ = static_cast<size_t>(slow_hyper->getAxis(1).n);
+	_ny_ = static_cast<size_t>(slow_hyper->getAxis(2).n);
+	_nw_ = static_cast<size_t>(slow_hyper->getAxis(3).n);
+	_nz_ = static_cast<size_t>(slow_hyper->getAxis(4).n);
 
 	ref_labels.resize(boost::extents[_nz_][_nw_][_ny_ + pady][_nx_ + padx]);
 	slow_ref.resize(boost::extents[_nz_][_nref_][_nw_]);
@@ -31,19 +31,19 @@ RefSampler::RefSampler(const std::shared_ptr<complex4DReg>& slow, std::shared_pt
 };
 
 void RefSampler::kmeans_sample(const std::shared_ptr<complex4DReg>& slow) {
-	tbb::parallel_for(tbb::blocked_range<int>(0,_nz_),
-		[=](const tbb::blocked_range<int> &r) {
-		for (int iz=r.begin(); iz < r.end(); iz++) {
+	tbb::parallel_for(tbb::blocked_range<size_t>(0,_nz_),
+		[=](const tbb::blocked_range<size_t> &r) {
+		for (size_t iz=r.begin(); iz < r.end(); iz++) {
 			sample_at_depth(slow, iz);
 		}
 	});
 }
 
-void RefSampler::sample_at_depth(std::shared_ptr<complex4DReg> slow, int iz) {
-	tbb::parallel_for(tbb::blocked_range<int>(0,_nw_),
-	[=](const tbb::blocked_range<int> &r) {
-		for (int iw=r.begin(); iw < r.end(); iw++) {
-			int offset = (iw + iz*_nw_)*_nx_*_ny_;
+void RefSampler::sample_at_depth(std::shared_ptr<complex4DReg> slow, size_t iz) {
+	tbb::parallel_for(tbb::blocked_range<size_t>(0,_nw_),
+	[=](const tbb::blocked_range<size_t> &r) {
+		for (size_t iw=r.begin(); iw < r.end(); iw++) {
+			size_t offset = (iw + iz*_nw_)*_nx_*_ny_;
 			std::complex<float>* ptr_slow_ref = slow->getVals() + offset;
 			// prepare opencv matrices for processing
 			cv::Mat_<std::complex<float>> slow_slice(_nx_*_ny_, 1, ptr_slow_ref);
@@ -61,7 +61,7 @@ void RefSampler::sample_at_depth(std::shared_ptr<complex4DReg> slow, int iz) {
 			// copy labels to ref_labels array
 			for (int iy=0; iy < _ny_; ++iy) {
 				for (int ix=0; ix < _nx_; ++ix) {
-						int flat_index = ix + iy*_nx_;
+						size_t flat_index = ix + iy*_nx_;
 						ref_labels[iz][iw][iy][ix] = labels.at<int>(flat_index);
 				}
 		}
@@ -81,7 +81,7 @@ void RefSampler::sample_at_depth(std::shared_ptr<complex4DReg> slow, int iz) {
 	});
 }
 
-std::future<void> RefSampler::sample_at_depth_async(std::shared_ptr<complex4DReg> slow, int iz) {
+std::future<void> RefSampler::sample_at_depth_async(std::shared_ptr<complex4DReg> slow, size_t iz) {
 	return std::async(std::launch::async, [this, slow, iz]() {
 			sample_at_depth(slow, iz);
 	});

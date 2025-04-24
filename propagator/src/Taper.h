@@ -16,6 +16,9 @@ public:
 		tapx = par->getInt("taperx", 0);
 		tapy = par->getInt("tapery", 0);
 
+		_grid_ = {32, 4, 4};
+  	_block_ = {16, 16, 4};
+
 		launcher = Taper_launcher(&taper_forward, _grid_, _block_, _stream_);
 
 	};

@@ -45,8 +45,8 @@ BENCHMARK_DEFINE_F(FFTBenchmark, forward_device)
   }
 };
 BENCHMARK_REGISTER_F(FFTBenchmark, forward_device)
-    ->ArgsProduct({{1,5,10,50},{1,5,10,50}, {1000}, {1000}})
-    ->Iterations(10)
+    ->ArgsProduct({{1,5,10,50,100},{1,5,10,50,100}, {1000}, {1000}})
+    ->Iterations(2)
     ->UseManualTime();
 
 BENCHMARK_MAIN();

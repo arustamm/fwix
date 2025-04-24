@@ -25,10 +25,10 @@ __global__ void select_forward(complex_vector* __restrict__ model, complex_vecto
     for (int iw=iw0; iw < NW; iw += jw) {
       for (int iy=iy0; iy < NY; iy += jy) {
         for (int ix=ix0; ix < NX; ix += jx) {
-          int i = ix + (iy + iw*NY)*NX;
+          size_t i = ix + (iy + iw*NY)*NX;
           if (labels[i] == value) {
             int nd_ind[] = {is, iw, iy, ix};
-            int ind = ND_TO_FLAT(nd_ind, dims);
+            size_t ind = ND_TO_FLAT(nd_ind, dims);
             data->mat[ind] = cuCaddf(data->mat[ind], model->mat[ind]); 
           }
         }
