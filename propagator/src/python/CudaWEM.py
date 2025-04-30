@@ -4,6 +4,23 @@ import genericIO
 import numpy as np
 from pyVector import superVector
 
+class StreamingPropagator(Op.Operator):
+	# model here refers to the slowness model
+	# data refers to the recorded traces
+	def __init__(self, model, data, wavelet, par, geometry, nbatches):
+		self.setDomainRange(model,data)
+		# cpp code needs the hypercube corresponding to the injected source traces
+		self.cppMode = pyCudaWEM.StreamingPropagator(
+			wavelet.getHyper().cppMode, data.getHyper().cppMode, 
+			model.vecs[0].getHyper().cppMode, wavelet.cppMode,
+			geometry["sx"], geometry["sy"], geometry["sz"], geometry["s_ids"],
+			geometry["rx"], geometry["ry"], geometry["rz"], geometry["r_ids"],
+			par.cppMode, nbatches
+		)
+
+	def forward(self,add,model,data):
+		mod = [m.cppMode for m in model]
+		self.cppMode.forward(add, mod, data.cppMode)
 
 class Propagator(Op.Operator):
 	# model here refers to the slowness model
@@ -21,7 +38,7 @@ class Propagator(Op.Operator):
 
 	def forward(self,add,model,data):
 		mod = [m.cppMode for m in model]
-		self.cppMode.nl_forward(add, mod, data.cppMode)
+		self.cppMode.forward(add, mod, data.cppMode)
 
 
 class PhaseShift(Op.Operator):

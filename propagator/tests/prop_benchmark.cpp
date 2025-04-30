@@ -19,14 +19,20 @@ class PS_Test : public testing::Test {
     n2 = 200;
     n3 = 100;
     n4 = 10;
+    int nz = 3;
 
-    // create a vector of slowness values for each frequency
-    std::vector<std::complex<float>> slow(n3, {1.f, 0.f});
+    Json::Value root;
+    root["nref"] = 1;
+    auto par = std::make_shared<jsonParamObj>(root);
+    auto slow4d = std::make_shared<complex4DReg>(n1, n2, n3, nz);
+    slow4d->set(1.f);
+    auto ref = std::make_shared<RefSampler>(slow4d, par);
+
     auto hyper = std::make_shared<hypercube>(n1, n2, n3, n4);
     space4d = std::make_shared<complex4DReg>(hyper);
     space4d->set(1.f);
     ps = std::make_unique<PhaseShift>(hyper, .1f, 0.f);
-    ps->set_slow(slow.data());
+    ps->set_slow(ref->get_ref_slow(0,0));
 
     block = {
       {8,8,4}, {8,8,2},

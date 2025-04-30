@@ -34,7 +34,7 @@ public:
 
     void set_background_model(std::vector<std::shared_ptr<complex4DReg>> model);
 
-    void nl_forward(bool add, std::vector<std::shared_ptr<complex4DReg>> model, std::shared_ptr<complex2DReg> data);
+    void forward(bool add, std::vector<std::shared_ptr<complex4DReg>> model, std::shared_ptr<complex2DReg> data);
 
     void cu_forward(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data){
       throw std::runtime_error("Not implemented");
@@ -58,8 +58,6 @@ protected:
     std::shared_ptr<RefSampler> ref;
 
 private:
-    // Helper method to count unique shot IDs
-    int find_number_of_shots(const std::vector<int>& ids);
-
     std::vector<axis> ax;
+    std::shared_ptr<hypercube> _slow_hyper;
 };

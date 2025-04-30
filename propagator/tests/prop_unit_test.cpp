@@ -154,9 +154,9 @@ class Selector_Test : public testing::Test {
   void SetUp() override {
     nx = 100;
     ny = 100;
-    nz = 10;
+    nz = 5;
     nw = 15;
-    ns = 10;
+    ns = 3;
     nref = 3;
 
     auto slow4d = std::make_shared<complex4DReg>(nx, ny, nw, nz);
@@ -165,8 +165,8 @@ class Selector_Test : public testing::Test {
     root["nref"] = nref;
     auto par = std::make_shared<jsonParamObj>(root);
 
-    ref = std::make_shared<RefSampler>(slow4d, par);
     slow4d->random();
+    ref = std::make_shared<RefSampler>(slow4d, par);
 
     // create a vector of slowness values for each frequency
     auto domain = std::make_shared<hypercube>(nx, ny, nw, ns);
@@ -422,15 +422,15 @@ TEST_F(Reflect_Test, dot) {
 class Propagator_Test : public testing::Test {
   protected:
    void SetUp() override {
-     nx = 500;
+     nx = 100;
      auto ax1 = axis(nx, 0.f, 0.01f);
-     ny = 200;
+     ny = 100;
      auto ax2 = axis(ny, 0.f, 0.01f);
-     nw = 120;
+     nw = 10;
      auto ax3 = axis(nw, 1.f, 1.f);
-     ns = 1;
+     ns = 3;
      auto ax4 = axis(ns, 0.f, 1.f);
-     nz = 100;
+     nz = 10;
      float oz = 0.f;
      float dz = 0.01f;
  
@@ -488,7 +488,7 @@ class Propagator_Test : public testing::Test {
  
  TEST_F(Propagator_Test, fwd) { 
    for (int i=0; i < 3; ++i)
-     ASSERT_NO_THROW(prop->nl_forward(false, slow_den, traces));
+     ASSERT_NO_THROW(prop->forward(false, slow_den, traces));
  }
 
 
