@@ -88,18 +88,25 @@ void Propagator::forward(bool add, std::vector<std::shared_ptr<complex4DReg>> mo
   this->set_background_model(model);
   // for (batches in z)
   // down and record
-  std::future<void> sample_ref;
+  std::future<void> current_future = ref->sample_at_depth_async(model[0], 0);
+
 	for (int iz=0; iz < ax[3].n; ++iz) {
+    std::future<void> next_future;
+    if (iz+1 < ax[3].n) 
+        next_future = ref->sample_at_depth_async(model[0], iz+1);
     // sample reference slowness at current depth and return a future
-    sample_ref = ref->sample_at_depth_async(model[0], iz);
     inj_src->set_depth(iz);
     inj_src->cu_forward(true, inj_src->model_vec, down->data_vec);
     inj_rec->set_depth(iz);
     inj_rec->cu_adjoint(true, this->data_vec, down->data_vec);
-    // wait for the reference sampling to finish
-    sample_ref.wait();
+    // Wait for current sample to complete
+    current_future.wait();
     // propagate wavefield
     down->one_step_fwd(iz, down->data_vec);
+    // Update current_future for the next iteration
+    if (iz+1 < ax[3].n) 
+      current_future = std::move(next_future);
+  
   }
 
   up->data_vec->zero();

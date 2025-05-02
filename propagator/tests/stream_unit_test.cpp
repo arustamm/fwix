@@ -64,7 +64,7 @@ protected:
         auto ax2 = axis(ny, 0.f, 10.0f);
         nw = 10; // Total frequencies
         auto ax3 = axis(nw, 1.f, 1.f); // Freq: 1Hz to 10Hz
-        ns = 3; // Number of unique sources for model axis? Unused?
+        ns = 10; // Number of unique sources for model axis? Unused?
         nz = 10;
         auto ax4 = axis(nz, 0.f, 5.0f); // Z axis: 5m spacing
 
@@ -424,6 +424,17 @@ TEST_F(StreamingPropagatorTest, ForwardNonAdd) {
           << "(Imag) Mismatch at Global Receiver " << iRec << ", Global Frequency " << iFreq;
     }
   }
+
+}
+
+// Test forward with add = false
+TEST_F(StreamingPropagatorTest, Benchmark) {
+  // Use default batches {2, 2}
+  Propagator streamer(domainHyper, rangeHyper, slowHyper, wavelet,
+                               sx_all, sy_all, sz_all, s_ids_all,
+                               rx_all, ry_all, rz_all, r_ids_all,
+                               par);
+streamer.forward(false, model, data);
 
 }
 

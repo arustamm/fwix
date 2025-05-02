@@ -48,6 +48,8 @@ using RangeType = D;
 		}
 	};
 
+	cudaStream_t get_stream() const {return _stream_;};
+
 	void set_grid(dim3 grid) {_grid_ = grid;};
 	void set_block(dim3 block) {_block_ = block;};
 

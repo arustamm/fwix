@@ -411,17 +411,21 @@ std::vector<std::shared_ptr<complex4DReg>> StreamingPropagator::windowModel(
   // Copy the data from the original model to the windowed model
   // Assuming the order is [iz][iw][iy][ix] in the 4D array
   for (int m = 0; m < original.size(); ++m) {
-    for (int i3 = 0; i3 < ax[3].n; i3++) {
-      for (int i2 = 0; i2 < ax[2].n; i2++) {
-        for (int i1 = 0; i1 < ax[1].n; i1++) {
-          for (int i0 = 0; i0 < ax[0].n; i0++) {
-            // Access source and destination using multi_array indexing
-            (*windowed_models[m]->_mat)[i3][i2][i1][i0] = 
-                (*original[m]->_mat)[i3][start_freq + i2][min_iy + i1][min_ix + i0];
+    tbb::parallel_for(
+      tbb::blocked_range<int>(0, ax[3].n),
+      [&](const tbb::blocked_range<int>& r) {
+        for (int i3 = r.begin(); i3 != r.end(); ++i3) {
+          for (int i2 = 0; i2 < ax[2].n; ++i2) {
+            for (int i1 = 0; i1 < ax[1].n; ++i1) {
+              for (int i0 = 0; i0 < ax[0].n; ++i0) {
+                // Access source and destination using multi_array indexing
+                (*windowed_models[m]->_mat)[i3][i2][i1][i0] = 
+                    (*original[m]->_mat)[i3][start_freq + i2][min_iy + i1][min_ix + i0];
+              }
+            }
           }
         }
-      }
-    }
+      });
   }
 
   return windowed_models; 
@@ -437,25 +441,30 @@ void StreamingPropagator::forward(bool add, std::vector<std::shared_ptr<complex4
   
   // Phase 1: Launch all CUDA work in parallel
   // Each gets its own output buffer, so no synchronization needed
-  for (int src_batch = 0; src_batch < nsrc_batches; ++src_batch) {
-    for (int freq_batch = 0; freq_batch < nfreq_batches; ++freq_batch) {
-      int prop_idx = src_batch * nfreq_batches + freq_batch;
-      
-      // Extract frequency slice for each model component
-      int start_freq = freq_start_indices[freq_batch];
-      int batch_freq_size = freq_batch_sizes[freq_batch];
-      
-      // Create windowed models
-      std::vector<std::shared_ptr<complex4DReg>> batch_model = 
-        windowModel(model, start_freq, batch_freq_size, src_batch);
-      
-      // Create batch output data
-      auto batch_hyper = propagators[prop_idx]->getRange();
-      batch_outputs[prop_idx] = std::make_shared<complex2DReg>(batch_hyper);
-      // Launch propagator in its own stream (false means don't add to existing data)
-      propagators[prop_idx]->forward(true, batch_model, batch_outputs[prop_idx]);
+  tbb::parallel_for(
+    tbb::blocked_range<int>(0, nsrc_batches * nfreq_batches),
+    [&](const tbb::blocked_range<int>& r) {
+      for (int i = r.begin(); i != r.end(); ++i) {
+        int src_batch = i / nfreq_batches;
+        int freq_batch = i % nfreq_batches;
+        
+        // Extract frequency slice for each model component
+        int start_freq = freq_start_indices[freq_batch];
+        int batch_freq_size = freq_batch_sizes[freq_batch];
+        
+        // Create windowed models
+        std::vector<std::shared_ptr<complex4DReg>> batch_model = 
+          windowModel(model, start_freq, batch_freq_size, src_batch);
+        
+        // Create batch output data
+        auto batch_hyper = propagators[i]->getRange();
+        batch_outputs[i] = std::make_shared<complex2DReg>(batch_hyper);
+        
+        // Launch propagator in its own stream (false means don't add to existing data)
+        propagators[i]->forward(true, batch_model, batch_outputs[i]);
+      }
     }
-  }
+  );
   
   // Wait for all CUDA work to complete before proceeding to accumulation
   CHECK_CUDA_ERROR(cudaDeviceSynchronize());

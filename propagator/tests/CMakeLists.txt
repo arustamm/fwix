@@ -7,6 +7,7 @@ prop_unit_test.cpp
 pspi_benchmark.cpp
 prop_benchmark.cpp
 stream_unit_test.cpp
+stream_benchmark.cpp
 )
 
 foreach(src ${TEST_SOURCES})

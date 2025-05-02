@@ -487,8 +487,8 @@ class Propagator_Test : public testing::Test {
  };
  
  TEST_F(Propagator_Test, fwd) { 
-   for (int i=0; i < 3; ++i)
-     ASSERT_NO_THROW(prop->forward(false, slow_den, traces));
+  ASSERT_NO_THROW(prop->forward(false, slow_den, traces));
+  ASSERT_TRUE(std::real(traces->dot(traces)) > 0.) << "The output is zero";
  }
 
 

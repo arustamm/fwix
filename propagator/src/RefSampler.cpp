@@ -24,6 +24,8 @@ RefSampler::RefSampler(std::shared_ptr<hypercube> slow_hyper, std::shared_ptr<pa
 
 	ref_labels.resize(boost::extents[_nz_][_nw_][_ny_ + pady][_nx_ + padx]);
 	slow_ref.resize(boost::extents[_nz_][_nref_][_nw_]);
+
+	is_sampled.resize(_nz_);
 };
 
 RefSampler::RefSampler(const std::shared_ptr<complex4DReg>& slow, std::shared_ptr<paramObj> par) : RefSampler(slow->getHyper(), par) {
@@ -40,9 +42,9 @@ void RefSampler::kmeans_sample(const std::shared_ptr<complex4DReg>& slow) {
 }
 
 void RefSampler::sample_at_depth(std::shared_ptr<complex4DReg> slow, size_t iz) {
-	tbb::parallel_for(tbb::blocked_range<size_t>(0,_nw_),
-	[=](const tbb::blocked_range<size_t> &r) {
-		for (size_t iw=r.begin(); iw < r.end(); iw++) {
+	// tbb::parallel_for(tbb::blocked_range<size_t>(0,_nw_),
+	// [=](const tbb::blocked_range<size_t> &r) {
+		for (size_t iw=0; iw < _nw_; iw++) {
 			size_t offset = (iw + iz*_nw_)*_nx_*_ny_;
 			std::complex<float>* ptr_slow_ref = slow->getVals() + offset;
 			// prepare opencv matrices for processing
@@ -50,7 +52,7 @@ void RefSampler::sample_at_depth(std::shared_ptr<complex4DReg> slow, size_t iz) 
 			cv::Mat_<int> labels(_nx_*_ny_, 1);
 			cv::Mat_<std::complex<float>> centers(_nref_, 1);
 			// stopping criteria
-			cv::TermCriteria criteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 100, 1e-8);
+			cv::TermCriteria criteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 100, 1e-3);
 			// compute centers & labels
 			double obj = cv::kmeans(slow_slice, _nref_, labels, criteria, 1, cv::KMEANS_PP_CENTERS, centers);
 			// copy to slow_ref array
@@ -78,7 +80,8 @@ void RefSampler::sample_at_depth(std::shared_ptr<complex4DReg> slow, size_t iz) 
 				}
 			}
 		}
-	});
+	// });
+	is_sampled[iz] = true;
 }
 
 std::future<void> RefSampler::sample_at_depth_async(std::shared_ptr<complex4DReg> slow, size_t iz) {
