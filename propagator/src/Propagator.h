@@ -56,7 +56,7 @@ protected:
     
     // Reference velocity sampler
     std::shared_ptr<RefSampler> ref;
-
+    int look_ahead;
 private:
     std::vector<axis> ax;
     std::shared_ptr<hypercube> _slow_hyper;

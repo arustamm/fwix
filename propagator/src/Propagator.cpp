@@ -1,5 +1,6 @@
 #include <Propagator.h>
-
+#include <tbb/tbb.h>
+#include <tbb/parallel_pipeline.h>
 // Here I treat Propagator as a linear operator from wavelet -> data
 Propagator::Propagator (
   const std::shared_ptr<hypercube>& domain, 
@@ -87,27 +88,45 @@ void Propagator::forward(bool add, std::vector<std::shared_ptr<complex4DReg>> mo
   // update model and notify all operators
   this->set_background_model(model);
   // for (batches in z)
-  // down and record
-  std::future<void> current_future = ref->sample_at_depth_async(model[0], 0);
 
-	for (int iz=0; iz < ax[3].n; ++iz) {
-    std::future<void> next_future;
-    if (iz+1 < ax[3].n) 
-        next_future = ref->sample_at_depth_async(model[0], iz+1);
-    // sample reference slowness at current depth and return a future
-    inj_src->set_depth(iz);
-    inj_src->cu_forward(true, inj_src->model_vec, down->data_vec);
-    inj_rec->set_depth(iz);
-    inj_rec->cu_adjoint(true, this->data_vec, down->data_vec);
-    // Wait for current sample to complete
-    current_future.wait();
-    // propagate wavefield
-    down->one_step_fwd(iz, down->data_vec);
-    // Update current_future for the next iteration
-    if (iz+1 < ax[3].n) 
-      current_future = std::move(next_future);
+  int max_depth = ax[3].n;
+
+ // Start with the first depth
+ std::future<void> current_future = ref->sample_at_depth_async(model[0], 0);
   
-  }
+ // Create a queue of futures for prefetched depths
+ std::queue<std::future<void>> future_queue;
+ 
+ // Prefetch initial depths based on look_ahead parameter
+ for (int i = 1; i < std::min(look_ahead + 1, max_depth); i++) 
+   future_queue.push(ref->sample_at_depth_async(model[0], i));
+
+ // Process all depths
+ for (int iz = 0; iz < max_depth; iz++) {
+   // Start sampling the next depth that needs sampling
+  int next_depth = iz + look_ahead + 1;
+  if (next_depth < max_depth)   // Only schedule if within bounds
+      future_queue.push(ref->sample_at_depth_async(model[0], next_depth));
+
+   // Process current depth steps that don't need the sampled data
+   inj_src->set_depth(iz);
+   inj_src->cu_forward(true, inj_src->model_vec, down->data_vec);
+   
+   inj_rec->set_depth(iz);
+   inj_rec->cu_adjoint(true, this->data_vec, down->data_vec);
+   
+   // Wait for current sampling to complete
+   current_future.wait();
+   
+   // Propagate wavefield
+   down->one_step_fwd(iz, down->data_vec);
+   
+   // Update current_future for the next iteration
+   if (!future_queue.empty()) {
+     current_future = std::move(future_queue.front());
+     future_queue.pop();
+   }
+ }
 
   up->data_vec->zero();
   // no need to sample reference slowness again as the RefSampler already holds all the refernce velocities

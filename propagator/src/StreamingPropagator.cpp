@@ -190,6 +190,8 @@ void StreamingPropagator::createPropagators(
       
       // Create frequency-sliced domain and range hypercubes
       int start_freq = freq_start_indices[freq_batch];
+      this->start_freqs.push_back(start_freq);
+
       int batch_freq_size = freq_batch_sizes[freq_batch];
       
       auto batch_domain = createSubHypercube(domain, src_index_batches[src_batch], start_freq, batch_freq_size);
@@ -197,6 +199,13 @@ void StreamingPropagator::createPropagators(
       auto batch_slow_hyper = createSubSlowness(slow_hyper, start_freq, batch_freq_size, src_batch);
       // Extract frequency-sliced wavelet
       auto batch_wavelet = createSubWavelet(wavelet, batch_domain, src_index_batches[src_batch], start_freq);
+      // allocate space for model_batch
+      std::vector<std::shared_ptr<complex4DReg>> model;
+      model.push_back(std::make_shared<complex4DReg>(batch_slow_hyper));
+      model.push_back(std::make_shared<complex4DReg>(batch_slow_hyper));
+      model_batches.push_back(model);
+      // allocate space for data_batch
+      data_batches.push_back(std::make_shared<complex2DReg>(batch_range));
       
       // Create propagator
       propagators[prop_idx] = std::make_unique<Propagator>(
@@ -250,6 +259,8 @@ std::shared_ptr<hypercube> StreamingPropagator::createSubSlowness(
   // First calculate the spatial windowing parameters based on acquisition geometry
   int min_ix, max_ix, min_iy, max_iy;
   std::tie(min_ix, max_ix, min_iy, max_iy) = calculateWindowParameters(src_batch, original);
+  this->minx.push_back(min_ix);
+  this->miny.push_back(min_iy);
   
   // Calculate window sizes
   int window_nx = max_ix - min_ix + 1;
@@ -388,25 +399,14 @@ std::tuple<int, int, int, int> StreamingPropagator::calculateWindowParameters(
   return std::make_tuple(min_ix, max_ix, min_iy, max_iy);
 }
 
-std::vector<std::shared_ptr<complex4DReg>> StreamingPropagator::windowModel(
+void StreamingPropagator::windowModel(
   const std::vector<std::shared_ptr<complex4DReg>>& original,
-  int start_freq,
-  int freq_batch_size,
-  int src_batch
+  std::vector<std::shared_ptr<complex4DReg>>& model_batch,
+  int min_ix, int min_iy, 
+  int start_freq
 ) {
 
-  int min_ix, max_ix, min_iy, max_iy;
-  std::tie(min_ix, max_ix, min_iy, max_iy) = calculateWindowParameters(src_batch, original[0]->getHyper());
-
-  // Calculate sub hypercube
-  auto hyper = createSubSlowness(original[0]->getHyper(), start_freq, freq_batch_size, src_batch);
-  auto ax = hyper->getAxes();
-
-  std::vector<std::shared_ptr<complex4DReg>> windowed_models(original.size());
-  windowed_models[0] = std::make_shared<complex4DReg>(hyper);
-  windowed_models[1] = std::make_shared<complex4DReg>(hyper);
-
-  auto oaxx = original[0]->getHyper()->getAxes();
+  auto ax = model_batch[0]->getHyper()->getAxes();
 
   // Copy the data from the original model to the windowed model
   // Assuming the order is [iz][iw][iy][ix] in the 4D array
@@ -414,12 +414,12 @@ std::vector<std::shared_ptr<complex4DReg>> StreamingPropagator::windowModel(
     tbb::parallel_for(
       tbb::blocked_range<int>(0, ax[3].n),
       [&](const tbb::blocked_range<int>& r) {
-        for (int i3 = r.begin(); i3 != r.end(); ++i3) {
+        for (int i3 = 0; i3 != ax[3].n; ++i3) {
           for (int i2 = 0; i2 < ax[2].n; ++i2) {
             for (int i1 = 0; i1 < ax[1].n; ++i1) {
               for (int i0 = 0; i0 < ax[0].n; ++i0) {
                 // Access source and destination using multi_array indexing
-                (*windowed_models[m]->_mat)[i3][i2][i1][i0] = 
+                (*model_batch[m]->_mat)[i3][i2][i1][i0] = 
                     (*original[m]->_mat)[i3][start_freq + i2][min_iy + i1][min_ix + i0];
               }
             }
@@ -428,16 +428,11 @@ std::vector<std::shared_ptr<complex4DReg>> StreamingPropagator::windowModel(
       });
   }
 
-  return windowed_models; 
 }
 
 void StreamingPropagator::forward(bool add, std::vector<std::shared_ptr<complex4DReg>> model, std::shared_ptr<complex2DReg> data) {
   // Clear the output data if not adding
   if (!add) data->zero();
-  
-  // Create an array of individual results - one for each batch
-  // This avoids mutex contention completely
-  std::vector<std::shared_ptr<complex2DReg>> batch_outputs(nsrc_batches * nfreq_batches);
   
   // Phase 1: Launch all CUDA work in parallel
   // Each gets its own output buffer, so no synchronization needed
@@ -445,63 +440,41 @@ void StreamingPropagator::forward(bool add, std::vector<std::shared_ptr<complex4
     tbb::blocked_range<int>(0, nsrc_batches * nfreq_batches),
     [&](const tbb::blocked_range<int>& r) {
       for (int i = r.begin(); i != r.end(); ++i) {
-        int src_batch = i / nfreq_batches;
-        int freq_batch = i % nfreq_batches;
-        
-        // Extract frequency slice for each model component
-        int start_freq = freq_start_indices[freq_batch];
-        int batch_freq_size = freq_batch_sizes[freq_batch];
-        
         // Create windowed models
-        std::vector<std::shared_ptr<complex4DReg>> batch_model = 
-          windowModel(model, start_freq, batch_freq_size, src_batch);
-        
-        // Create batch output data
-        auto batch_hyper = propagators[i]->getRange();
-        batch_outputs[i] = std::make_shared<complex2DReg>(batch_hyper);
-        
+        windowModel(model, model_batches[i], minx[i], miny[i], start_freqs[i]);
         // Launch propagator in its own stream (false means don't add to existing data)
-        propagators[i]->forward(true, batch_model, batch_outputs[i]);
+        propagators[i]->forward(true, model_batches[i], data_batches[i]);
       }
     }
   );
+
   
-  // Wait for all CUDA work to complete before proceeding to accumulation
-  CHECK_CUDA_ERROR(cudaDeviceSynchronize());
-  
-  // Function to map one batch's results to an accumulator
-  auto map_batch_to_accumulator = [&](std::shared_ptr<complex2DReg> acc, int prop_idx) {
-    int src_batch = prop_idx / nfreq_batches;
-    int freq_batch = prop_idx % nfreq_batches;
-    
-    int start_freq = freq_start_indices[freq_batch];
-    int batch_freq_size = freq_batch_sizes[freq_batch];
-    
-    for (int j = 0; j < r_index_batches[src_batch].size(); ++j) {
-      int idx = r_index_batches[src_batch][j];
-      for (int iw = 0; iw < batch_freq_size; ++iw) {
-        (*acc->_mat)[idx][start_freq + iw] += 
-          (*batch_outputs[prop_idx]->_mat)[j][iw];
+  // Phase 2: Accumulate results - this can be done in parallel safely now
+  tbb::parallel_for(
+    tbb::blocked_range<int>(0, nsrc_batches * nfreq_batches),
+    [&](const tbb::blocked_range<int>& r) {
+      for (int prop_idx = r.begin(); prop_idx != r.end(); ++prop_idx) {
+        int src_batch = prop_idx / nfreq_batches;
+        int freq_batch = prop_idx % nfreq_batches;
+        
+        int start_freq = freq_start_indices[freq_batch];
+        int batch_freq_size = freq_batch_sizes[freq_batch];
+
+        CHECK_CUDA_ERROR(cudaStreamSynchronize(streams[prop_idx]));
+        
+        for (int j = 0; j < r_index_batches[src_batch].size(); j++) {
+          int idx = r_index_batches[src_batch][j];
+          for (int iw = 0; iw < batch_freq_size; iw++) {
+            // its safe to accumulate as each batch is independent
+            // #pragma omp atomic
+            (*data->_mat)[idx][start_freq + iw] += 
+              (*data_batches[prop_idx]->_mat)[j][iw];
+          }
+        }
       }
-    }
-    return acc;
-  };
-  
-  // Perform parallel reduction across all batches
-  auto final_result = tbb::parallel_reduce(
-    tbb::blocked_range<int>(0, batch_outputs.size()),
-    std::make_shared<complex2DReg>(data->getHyper()),
-    [&](const tbb::blocked_range<int>& r, std::shared_ptr<complex2DReg> acc) -> std::shared_ptr<complex2DReg> {
-      for (int i = r.begin(); i != r.end(); ++i) 
-        map_batch_to_accumulator(acc, i);
-      return acc;
-    },
-    [&](std::shared_ptr<complex2DReg> left, std::shared_ptr<complex2DReg> right) {
-      left->scaleAdd(right, 1.0f, 1.0f);
-      return left;
     }
   );
   
   // Add the final accumulated result to the output
-  data->scaleAdd(final_result, 1.0f, 1.0f);
+  // data->scaleAdd(final_result, 1.0f, 1.0f);
 }

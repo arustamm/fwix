@@ -61,11 +61,11 @@ public:
         int src_batch, 
         const std::shared_ptr<hypercube>& model);
 
-    std::vector<std::shared_ptr<complex4DReg>> windowModel(
+    void windowModel(
         const std::vector<std::shared_ptr<complex4DReg>>& original,
-        int start_freq,
-        int freq_batch_size,
-        int src_batch
+        std::vector<std::shared_ptr<complex4DReg>>& model_batch,
+        int min_ix, int min_iy, 
+        int start_freq
     );
 
     // Member variables
@@ -112,4 +112,10 @@ public:
     std::vector<int> freq_batch_sizes;
 
     float ginsu_x, ginsu_y;
+
+    // Batch models and outputs
+    std::vector<std::vector<std::shared_ptr<complex4DReg>>> model_batches;
+    std::vector<std::shared_ptr<complex2DReg>> data_batches;
+    std::vector<int> minx, miny;
+    std::vector<int> start_freqs;
 };

@@ -46,7 +46,9 @@ int main(int argc, char **argv) {
 
     // --- Command Line Argument Parsing for Batch Sizes ---
     std::vector<int> batches;
-    std::vector<int> default_batches = {2, 2}; // Default values if not provided
+    std::vector<int> default_batches = {1, 1}; // Default values if not provided
+    batches.push_back(1);
+    int look_ahead = 1;
 
     if (argc == 1) {
         batches = default_batches;
@@ -54,8 +56,8 @@ int main(int argc, char **argv) {
     } else if (argc == 3) {
         try {
             batches.push_back(std::stoi(argv[1]));
-            batches.push_back(std::stoi(argv[2]));
-            std::cout << "Using command-line batch sizes: [" << batches[0] << ", " << batches[1] << "]" << std::endl;
+            look_ahead = std::stoi(argv[2]);
+            std::cout << "Using command-line batch sizes: [" << batches[0] << ", " << batches[1] << "]" << ", look ahead: " << look_ahead << std::endl;
         } catch (const std::invalid_argument& ia) {
             std::cerr << "Error: Invalid argument. Batch sizes must be integers." << std::endl;
             std::cerr << "Usage: " << argv[0] << " [batch_size_1 batch_size_2]" << std::endl;
@@ -91,14 +93,14 @@ int main(int argc, char **argv) {
     std::shared_ptr<complex2DReg> data; // Renamed 'traces' to 'data' for consistency with forward signature
     std::vector<std::shared_ptr<complex4DReg>> model; // Renamed 'slow_den' to 'model'
 
-    nx = 500;
+    nx = 100;
     auto ax1 = axis(nx, 0.f, 10.0f); // Example: 10m spacing
-    ny = 200;
+    ny = 100;
     auto ax2 = axis(ny, 0.f, 10.0f);
     nw = 100; // Total frequencies
     auto ax3 = axis(nw, 1.f, 1.f); // Freq: 1Hz to 10Hz
     ns = 1; 
-    nz = 100;
+    nz = 10;
     auto ax4 = axis(nz, 0.f, 5.0f); // Z axis: 5m spacing
 
     ax = {ax1, ax2, ax3, ax4};
@@ -115,6 +117,7 @@ int main(int argc, char **argv) {
     root["tapery"] = 10;
     root["ginsu_x"] = 100.0; // Padding in meters
     root["ginsu_y"] = 100.0;
+    root["ref_look_ahed"] = look_ahead;
     par = std::make_shared<jsonParamObj>(root); // Assuming constructor exists
 
     int n_unique_src = ns; // Define number of unique shots/IDs

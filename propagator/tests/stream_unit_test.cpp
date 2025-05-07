@@ -430,10 +430,10 @@ TEST_F(StreamingPropagatorTest, ForwardNonAdd) {
 // Test forward with add = false
 TEST_F(StreamingPropagatorTest, Benchmark) {
   // Use default batches {2, 2}
-  Propagator streamer(domainHyper, rangeHyper, slowHyper, wavelet,
+  StreamingPropagator streamer(domainHyper, rangeHyper, slowHyper, wavelet,
                                sx_all, sy_all, sz_all, s_ids_all,
                                rx_all, ry_all, rz_all, r_ids_all,
-                               par);
+                               par, {2,2});
 streamer.forward(false, model, data);
 
 }
