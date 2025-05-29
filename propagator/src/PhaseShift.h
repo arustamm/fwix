@@ -18,7 +18,7 @@ public:
     void cu_adjoint (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
     void cu_inverse (bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data);
 
-    void set_slow(std::complex<float>* sref) {
+    inline void set_slow(std::complex<float>* __restrict__ sref) {
         CHECK_CUDA_ERROR(cudaMemcpyAsync(_sref_, sref, _nw_*sizeof(std::complex<float>), cudaMemcpyHostToDevice, _stream_));
     }
 

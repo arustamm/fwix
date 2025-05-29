@@ -6,10 +6,31 @@ using namespace SEP;
 void OneWay::one_step_fwd(int iz, complex_vector* __restrict__ wfld) {
 	size_t offset = iz * this->get_wfld_slice_size();
 	CHECK_CUDA_ERROR(cudaMemcpyAsync(this->wfld->getVals() + offset, wfld->mat, this->get_wfld_slice_size_in_bytes(), cudaMemcpyDeviceToHost, _stream_));
+	// CHECK_CUDA_ERROR(cudaStreamSynchronize(_stream_));
 	// propagate one step by changing the state of the wavefield
 	prop->set_depth(iz);
 	prop->cu_forward(wfld);
 }
+
+// void OneWay::stream_to_disk() {
+    
+// 	size_t outSize;
+//     char *compressedData = SZ_compress(conf, wfld->getVals(), outSize);
+    
+//     // Save both compressed arrays
+//     std::ofstream outfile(_filename_, std::ios::binary);
+    
+//     // Write size information
+//     size_t real_size = compressed_real.size();
+//     size_t imag_size = compressed_imag.size();
+//     outfile.write(reinterpret_cast<char*>(&real_size), sizeof(real_size));
+//     outfile.write(reinterpret_cast<char*>(&imag_size), sizeof(imag_size));
+    
+//     // Write compressed data
+//     outfile.write(reinterpret_cast<char*>(compressed_real.data()), real_size);
+//     outfile.write(reinterpret_cast<char*>(compressed_imag.data()), imag_size);
+//     outfile.close();
+// }
 
 void OneWay::one_step_adj(int iz, complex_vector* __restrict__ wfld) {
 	// propagate one step by changing the state of the wavefield

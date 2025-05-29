@@ -10,6 +10,9 @@ complex_vector* model, complex_vector* data, dim3 grid, dim3 block, cudaStream_t
   _grid_ = {32, 4, 4};
   _block_ = {16, 16, 4};
 
+  // _block_ = 256;
+  // _grid_ = (this->getDomainSize() + _block_.x - 1) / _block_.x;
+
   launcher = PS_launcher(&ps_forward, &ps_adjoint, _grid_, _block_, _stream_);
   launcher_inv = PS_launcher(&ps_forward, &ps_inverse, _grid_, _block_, _stream_); 
 

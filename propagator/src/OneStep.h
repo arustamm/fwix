@@ -39,7 +39,7 @@ public:
     CHECK_CUDA_ERROR(cudaFree(model_k));
   };
 
-  void set_depth(size_t iz) {
+  inline void set_depth(size_t iz) {
     _iz_ = iz;
     select->set_labels(_ref_->get_ref_labels(iz));
   };

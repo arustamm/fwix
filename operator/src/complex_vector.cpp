@@ -97,17 +97,51 @@ complex_vector*  complex_vector::make_view(int start, int end) {
   return view;
 }
 
+complex_vector*  complex_vector::make_slice() {
+  complex_vector* slice;
+  CHECK_CUDA_ERROR(cudaMallocManaged(&slice, sizeof(complex_vector)));
+
+  slice->set_grid_block(_grid_, _block_);
+  slice->set_stream(stream);
+
+  // Calculate the size of the new vector
+  slice->ndim = this->ndim - 1; // Remove last dimension
+  
+  // Calculate nelem based on the range
+  slice->nelem = 1; 
+  for (int i = 0; i < slice->ndim; ++i) {
+    slice->nelem *= this->n[i];
+  }
+
+  CHECK_CUDA_ERROR(cudaMallocManaged(reinterpret_cast<void **>(&slice->n), sizeof(int) * slice->ndim));
+  CHECK_CUDA_ERROR(cudaMallocManaged(reinterpret_cast<void **>(&slice->d), sizeof(float) * slice->ndim));
+  CHECK_CUDA_ERROR(cudaMallocManaged(reinterpret_cast<void **>(&slice->o), sizeof(float) * slice->ndim));
+
+  // Copy dimensions, adjusting the slowest dimension
+  for (int i = 0; i < slice->ndim; ++i) {
+    slice->n[i] = this->n[i];
+    slice->d[i] = this->d[i];
+    slice->o[i] = this->o[i];
+  }
+
+  slice->allocated = false;
+  slice->mat = this->mat;
+
+  return slice;
+}
+
 // Const version (cannot modify the object)
 // const complex_vector* complex_vector::make_const_view() {
 //   return const_cast<const complex_vector*>(this->make_view()); 
 // }
 
-// void complex_vector::view_at(complex_vector* view, int index) {
-//   if (view->allocated) throw std::runtime_error("The provided complex_vector is not a view.");
-//   // Calculate the offset in the original data
-//   int offset = index * view->nelem;
-//   view->mat = this->mat + offset; 
-// }
+void complex_vector::slice_at(complex_vector* slice, int index) {
+  if (slice->allocated) throw std::runtime_error("The provided complex_vector is not a slice.");
+  if (slice->ndim != this->ndim - 1) throw std::runtime_error("The provided complex_vector is not a valid slice of the current vector.");
+  // Calculate the offset in the original data
+  size_t offset = static_cast<size_t>(index) * slice->nelem;
+  slice->mat = this->mat + offset; 
+}
 
 // void complex_vector::view_at(const complex_vector* view, int index) {
 //   if (view->allocated) throw std::runtime_error("The provided complex_vector is not a view!");

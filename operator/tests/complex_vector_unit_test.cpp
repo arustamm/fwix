@@ -115,6 +115,39 @@ TEST_F(ComplexVectorTest, view_modify) {
 
 }
 
+TEST_F(ComplexVectorTest, slice_modify) {
+  // fill in with const values
+  auto cpu_vec = std::make_shared<complex4DReg>(hyper);
+  cpu_vec->set(1.f);
+  // copy to gpu_vec
+  CHECK_CUDA_ERROR(cudaMemcpy(vec->mat, cpu_vec->getVals(), hyper->getN123() * sizeof(cuFloatComplex), cudaMemcpyHostToDevice));
+  // create a slice
+  auto slice = vec->make_slice();
+  // actually slice
+  int index = 5;
+  vec->slice_at(slice, index);
+  // zero out the slice
+  slice->zero();
+  // copy back 
+  CHECK_CUDA_ERROR(cudaMemcpy(cpu_vec->getVals(), vec->mat, hyper->getN123() * sizeof(cuFloatComplex), cudaMemcpyDeviceToHost));
+  // check that it modified the original vector
+  for (int i4 = 0; i4 < n4; ++i4) {
+    for (int i3 = 0; i3 < n3; ++i3) {
+      for (int i2 = 0; i2 < n2; ++i2) {
+        for (int i1 = 0; i1 < n1; ++i1) {
+          auto val = (*cpu_vec->_mat)[i4][i3][i2][i1];
+          if (i4 == index) ASSERT_EQ(val, 0.f);
+          else ASSERT_EQ(val, 1.f);
+        }
+      }
+    }   
+  }
+
+  slice->~complex_vector();
+  CHECK_CUDA_ERROR(cudaFree(slice));
+
+}
+
 TEST_F(ComplexVectorTest, compress_decompress) {
   auto orig = std::make_shared<complex4DReg>(hyper);
   auto decomp = std::make_shared<complex4DReg>(hyper);
@@ -143,10 +176,10 @@ float dy = 0.01f;
 
   const float* data = reinterpret_cast<const float*>(orig->getVals());
 
-  SZ3::Config conf(2*n4,n3,n2,n1);
+  SZ3::Config conf(n4,n3,n2,2*n1);
   conf.cmprAlgo = SZ3::ALGO_INTERP_LORENZO;
-  conf.errorBoundMode = SZ3::EB_ABS; // refer to def.hpp for all supported error bound mode
-  conf.absErrorBound = 1E-3; // absolute error bound 1e-3
+  conf.errorBoundMode = SZ3::EB_REL; // refer to def.hpp for all supported error bound mode
+  conf.relErrorBound = 1E-3; // absolute error bound 1e-3
   size_t outSize;
   char *compressedData = SZ_compress(conf, data, outSize);
 

@@ -26,6 +26,7 @@ OneWay.cpp
 Reflect.cpp
 Propagator.cpp
 StreamingPropagator.cpp
+utils.cpp
 )
 
 set(CPP_INC 
@@ -39,6 +40,7 @@ Reflect.h
 Propagator.h
 Taper.h
 StreamingPropagator.h
+utils.h
 )
 # add_library(cpp_objects OBJECT ${CPP_SRC} ${CPP_INC})
 # set_property(TARGET cpp_objects PROPERTY CUDA_SEPARABLE_COMPILATION ON)

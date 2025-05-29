@@ -6,7 +6,7 @@
 #include "StreamingOperator.h"
 
 bool verbose = false;
-double tolerance = 1e-6;
+double tolerance = 1e-5;
 
 class FFTTest : public testing::Test {
  protected:

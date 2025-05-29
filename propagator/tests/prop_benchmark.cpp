@@ -67,11 +67,54 @@ TEST_F(PS_Test, fwd) {
   }
 }
 
-TEST_F(PS_Test, fwd_full) { 
+class Selector_Test : public testing::Test {
+ protected:
+  void SetUp() override {
+    nx = 500;
+    ny = 200;
+    nz = 4;
+    nw = 100;
+    ns = 10;
+    nref = 11;
+
+    auto slow4d = std::make_shared<complex4DReg>(nx, ny, nw, nz);
+    
+    Json::Value root;
+    root["nref"] = nref;
+    auto par = std::make_shared<jsonParamObj>(root);
+
+    slow4d->random();
+    ref = std::make_shared<RefSampler>(slow4d, par);
+
+    // create a vector of slowness values for each frequency
+    auto domain = std::make_shared<hypercube>(nx, ny, nw, ns);
+    space4d = std::make_shared<complex4DReg>(domain);
+    space4d->set(1.f);
+
+    select = std::make_unique<Selector>(domain);
+
+    block = {
+      {8}, {16}, {32}, {64}, {128}, {256}, {512}
+    };
+
+  }
+
+  std::unique_ptr<Selector> select;
+  std::shared_ptr<complex4DReg> space4d;
+  std::shared_ptr<RefSampler> ref;
+  int nx, ny, nz, nw, ns, nref;
+  std::vector<std::vector<int>> block;
+};
+
+TEST_F(Selector_Test, fwd) { 
   auto out = space4d->clone();
-  ps->set_grid_block({8,8,4}, {32,16,2});
-  ps->forward(false, space4d, out);
+  
+  for (auto& b : block) {
+    select->set_block({b[0]});
+    select->forward(false, space4d, out);
+  }
 }
+
 
 
 int main(int argc, char **argv) {

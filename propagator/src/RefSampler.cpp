@@ -26,6 +26,9 @@ RefSampler::RefSampler(std::shared_ptr<hypercube> slow_hyper, std::shared_ptr<pa
 	slow_ref.resize(boost::extents[_nz_][_nref_][_nw_]);
 
 	is_sampled.resize(_nz_);
+
+	CHECK_CUDA_ERROR(cudaHostRegister(slow_ref.data(), sizeof(std::complex<float>)*slow_ref.num_elements(), cudaHostRegisterDefault));
+	CHECK_CUDA_ERROR(cudaHostRegister(ref_labels.data(), sizeof(int)*ref_labels.num_elements(), cudaHostRegisterDefault));
 };
 
 RefSampler::RefSampler(const std::shared_ptr<complex4DReg>& slow, std::shared_ptr<paramObj> par) : RefSampler(slow->getHyper(), par) {
@@ -42,9 +45,9 @@ void RefSampler::kmeans_sample(const std::shared_ptr<complex4DReg>& slow) {
 }
 
 void RefSampler::sample_at_depth(std::shared_ptr<complex4DReg> slow, size_t iz) {
-	// tbb::parallel_for(tbb::blocked_range<size_t>(0,_nw_),
-	// [=](const tbb::blocked_range<size_t> &r) {
-		for (size_t iw=0; iw < _nw_; iw++) {
+	tbb::parallel_for(tbb::blocked_range<size_t>(0,_nw_),
+	[=](const tbb::blocked_range<size_t> &r) {
+		for (size_t iw=r.begin(); iw < r.end(); iw++) {
 			size_t offset = (iw + iz*_nw_)*_nx_*_ny_;
 			std::complex<float>* ptr_slow_ref = slow->getVals() + offset;
 			// prepare opencv matrices for processing
@@ -80,7 +83,7 @@ void RefSampler::sample_at_depth(std::shared_ptr<complex4DReg> slow, size_t iz) 
 				}
 			}
 		}
-	// });
+	});
 	is_sampled[iz] = true;
 }
 

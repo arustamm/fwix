@@ -396,7 +396,7 @@ TEST_F(StreamingPropagatorTest, ForwardNonAdd) {
   std::complex<float> initial_garbage = {99.0f, -99.0f};
   data->set(initial_garbage);
   auto non_stream_data = data->clone();
-  
+
   ASSERT_NO_THROW(non_streamer.forward(false, model, non_stream_data));
 
   // Run forward

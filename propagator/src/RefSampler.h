@@ -8,6 +8,7 @@
 #include "boost/multi_array.hpp"
 #include  "opencv2/core.hpp"
 #include <future>
+#include "complex_vector.h"
 
 namespace SEP {
 
@@ -19,6 +20,11 @@ class RefSampler
 
 		RefSampler(std::shared_ptr<hypercube> slow_hyper, std::shared_ptr<paramObj> par);
 		RefSampler(const std::shared_ptr<complex4DReg>& slow, std::shared_ptr<paramObj> par);
+
+		~RefSampler() {
+			CHECK_CUDA_ERROR(cudaHostUnregister(slow_ref.data()));
+			CHECK_CUDA_ERROR(cudaHostUnregister(ref_labels.data()));
+		}
 
 		inline std::complex<float>* get_ref_slow(size_t iz, size_t iref) {
 			if (!is_sampled[iz]) std::runtime_error("RefSampler: slow not sampled at depth iz");

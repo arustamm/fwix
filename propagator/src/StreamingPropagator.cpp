@@ -224,8 +224,8 @@ void StreamingPropagator::createPropagators(
           par,
           nullptr,
           nullptr,
-          dim3(1,1,1),
-          dim3(1,1,1),
+          dim3(16,16,4),
+          dim3(16,16,4),
           streams[prop_idx]
       );
     }
@@ -412,10 +412,10 @@ void StreamingPropagator::windowModel(
   // Assuming the order is [iz][iw][iy][ix] in the 4D array
   for (int m = 0; m < original.size(); ++m) {
     tbb::parallel_for(
-      tbb::blocked_range<int>(0, ax[3].n),
-      [&](const tbb::blocked_range<int>& r) {
-        for (int i3 = 0; i3 != ax[3].n; ++i3) {
-          for (int i2 = 0; i2 < ax[2].n; ++i2) {
+      tbb::blocked_range2d<int, int>(0, ax[3].n, 0, ax[2].n),
+      [&](const tbb::blocked_range2d<int>& r) {
+        for (int i3 = r.rows().begin(); i3 < r.rows().end(); ++i3) {
+          for (int i2 = r.cols().begin(); i2 < r.cols().end(); ++i2) {
             for (int i1 = 0; i1 < ax[1].n; ++i1) {
               for (int i0 = 0; i0 < ax[0].n; ++i0) {
                 // Access source and destination using multi_array indexing
@@ -434,47 +434,31 @@ void StreamingPropagator::forward(bool add, std::vector<std::shared_ptr<complex4
   // Clear the output data if not adding
   if (!add) data->zero();
   
-  // Phase 1: Launch all CUDA work in parallel
-  // Each gets its own output buffer, so no synchronization needed
   tbb::parallel_for(
     tbb::blocked_range<int>(0, nsrc_batches * nfreq_batches),
     [&](const tbb::blocked_range<int>& r) {
       for (int i = r.begin(); i != r.end(); ++i) {
         // Create windowed models
         windowModel(model, model_batches[i], minx[i], miny[i], start_freqs[i]);
-        // Launch propagator in its own stream (false means don't add to existing data)
         propagators[i]->forward(true, model_batches[i], data_batches[i]);
-      }
-    }
-  );
 
-  
-  // Phase 2: Accumulate results - this can be done in parallel safely now
-  tbb::parallel_for(
-    tbb::blocked_range<int>(0, nsrc_batches * nfreq_batches),
-    [&](const tbb::blocked_range<int>& r) {
-      for (int prop_idx = r.begin(); prop_idx != r.end(); ++prop_idx) {
-        int src_batch = prop_idx / nfreq_batches;
-        int freq_batch = prop_idx % nfreq_batches;
+        int src_batch = i / nfreq_batches;
+        int freq_batch = i % nfreq_batches;
         
         int start_freq = freq_start_indices[freq_batch];
         int batch_freq_size = freq_batch_sizes[freq_batch];
 
-        CHECK_CUDA_ERROR(cudaStreamSynchronize(streams[prop_idx]));
+        CHECK_CUDA_ERROR(cudaStreamSynchronize(streams[i]));
         
         for (int j = 0; j < r_index_batches[src_batch].size(); j++) {
           int idx = r_index_batches[src_batch][j];
           for (int iw = 0; iw < batch_freq_size; iw++) {
-            // its safe to accumulate as each batch is independent
-            // #pragma omp atomic
             (*data->_mat)[idx][start_freq + iw] += 
-              (*data_batches[prop_idx]->_mat)[j][iw];
+              (*data_batches[i]->_mat)[j][iw];
           }
         }
+
       }
-    }
+    }, tbb::static_partitioner()
   );
-  
-  // Add the final accumulated result to the output
-  // data->scaleAdd(final_result, 1.0f, 1.0f);
 }

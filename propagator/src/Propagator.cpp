@@ -48,6 +48,7 @@ CudaOperator<complex2DReg, complex2DReg>(domain, range, model, data, grid, block
   inj_src = std::make_unique<Injection>(wavelet->getHyper(), wfld_hyper, slow_hyper->getAxis(4).o,  slow_hyper->getAxis(4).d, sx, sy, sz, shifted_s_ids, 
   this->model_vec, nullptr, _grid_, _block_, _stream_);
   // copy wavelet to inj_src->model_vec
+  CHECK_CUDA_ERROR(cudaHostRegister(wavelet->getVals(), inj_src->getDomainSizeInBytes(), cudaHostRegisterDefault));
   CHECK_CUDA_ERROR(cudaMemcpyAsync(inj_src->model_vec->mat, wavelet->getVals(), inj_src->getDomainSizeInBytes(), cudaMemcpyHostToDevice, _stream_));
 
   // in inj_rec we reuse the same data_vec (wavefield) as in inj_src and allocate a new model_vec (recorded data)
@@ -60,6 +61,9 @@ CudaOperator<complex2DReg, complex2DReg>(domain, range, model, data, grid, block
   up = std::make_unique<Upward>(wfld_hyper, slow_hyper, par, ref, inj_src->data_vec, inj_src->data_vec, _grid_, _block_, _stream_);
   reflect = std::make_unique<Reflect>(wfld_hyper, slow_hyper, inj_src->data_vec, inj_src->data_vec, _grid_, _block_, _stream_);
 
+  look_ahead = par->getInt("look_ahead", 1);
+
+  CHECK_CUDA_ERROR(cudaHostUnregister(wavelet->getVals()));
 };
 
 void Propagator::set_background_model(std::vector<std::shared_ptr<complex4DReg>> model) {
@@ -136,10 +140,14 @@ void Propagator::forward(bool add, std::vector<std::shared_ptr<complex4DReg>> mo
     down_wfld->zero();
     size_t offset = iz * down->get_wfld_slice_size();
     CHECK_CUDA_ERROR(cudaMemcpyAsync(down_wfld->mat, down->get_wfld()->getVals() + offset, down->get_wfld_slice_size_in_bytes(), cudaMemcpyHostToDevice, _stream_));
-		reflect->set_depth(iz);
+		// CHECK_CUDA_ERROR(cudaStreamSynchronize(_stream_));
+
+    reflect->set_depth(iz);
 		reflect->cu_forward(true, down_wfld, up->data_vec);
+
 		inj_rec->set_depth(iz);
     inj_rec->cu_adjoint(true, this->data_vec, up->data_vec);
+
     up->one_step_fwd(iz, up->data_vec);
 	}
 

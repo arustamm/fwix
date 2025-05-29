@@ -5,7 +5,7 @@
 #include <KernelLauncher.cuh>
 #include <KernelLauncher.cu>
 
-template class KernelLauncher<complex_vector*, complex_vector*>;
+template class KernelLauncher<const complex_vector*, const complex_vector*>;
 
 __device__ cuFloatComplex csqrtf(cuFloatComplex z) {
   float a = z.x;
@@ -23,7 +23,7 @@ __device__ cuFloatComplex csqrtf(cuFloatComplex z) {
 }
 
 __global__ void refl_forward(complex_vector* __restrict__ model, complex_vector* __restrict__ data, 
-  complex_vector* slow_slice, complex_vector* den_slice) {
+  const complex_vector* __restrict__ slow_slice, const complex_vector* __restrict__ den_slice) {
 
   int NX = slow_slice->n[0];
   int NY = slow_slice->n[1];
@@ -65,7 +65,7 @@ __global__ void refl_forward(complex_vector* __restrict__ model, complex_vector*
 };
 
 __global__ void refl_adjoint(complex_vector* __restrict__ model, complex_vector* __restrict__ data, 
-  complex_vector* slow_slice, complex_vector* den_slice) {
+  const complex_vector* __restrict__ slow_slice, const complex_vector* __restrict__ den_slice) {
 
   int NX = slow_slice->n[0];
   int NY = slow_slice->n[1];
@@ -107,7 +107,7 @@ __global__ void refl_adjoint(complex_vector* __restrict__ model, complex_vector*
 };
 
 __global__ void refl_forward_in(complex_vector* __restrict__ model, complex_vector* __restrict__ data, 
-  complex_vector* slow_slice, complex_vector* den_slice) {
+  const complex_vector* __restrict__ slow_slice, const complex_vector* __restrict__ den_slice) {
 
   int NX = slow_slice->n[0];
   int NY = slow_slice->n[1];
@@ -149,7 +149,7 @@ __global__ void refl_forward_in(complex_vector* __restrict__ model, complex_vect
 };
 
 __global__ void refl_adjoint_in(complex_vector* __restrict__ model, complex_vector* __restrict__ data, 
-  complex_vector* slow_slice, complex_vector* den_slice) {
+  const complex_vector* __restrict__ slow_slice,  const complex_vector* __restrict__ den_slice) {
 
   int NX = slow_slice->n[0];
   int NY = slow_slice->n[1];

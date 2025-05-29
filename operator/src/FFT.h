@@ -16,6 +16,7 @@ class cuFFT2d : public CudaOperator<complex4DReg, complex4DReg> {
 		~cuFFT2d() {
 			temp->~complex_vector();
 			CHECK_CUDA_ERROR(cudaFree(temp));
+			CHECK_CUDA_ERROR(cudaFree(d_SIZE));
 			cufftDestroy(plan);
 		};
 
@@ -27,13 +28,9 @@ class cuFFT2d : public CudaOperator<complex4DReg, complex4DReg> {
 
 	private:
 		cufftHandle plan;
-		int NX, NY, BATCH, SIZE; 
+		int NX, NY, BATCH, SIZE;
+		int* d_SIZE; 
 		complex_vector* temp;
-
-		void register_ortho_callback() { 
-			auto h_storeCallbackPtr = get_host_callback_ptr();
-			cufftXtSetCallback(plan, (void **)&h_storeCallbackPtr, CUFFT_CB_ST_COMPLEX, (void **)&(model_vec->n));
-		}
 		
 
 };

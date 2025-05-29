@@ -4,8 +4,8 @@
 #include <iostream>
 
 __device__ void CB_ortho(void *dataOut, size_t offset, cufftComplex element, void *callerInfo, void *sharedPtr) {
-  int* n = (int*)callerInfo;
-  float norm_factor = sqrtf(1.f/float((n[0] * n[1])));
+  int* n = static_cast<int*>(callerInfo);
+  float norm_factor = rsqrtf(static_cast<float>(n[0]));
   ((cufftComplex*)dataOut)[offset] = cuCmulf(element, make_cuFloatComplex(norm_factor, 0.0f));
 }
 __device__ cufftCallbackStoreC d_storeCallbackPtr = CB_ortho;

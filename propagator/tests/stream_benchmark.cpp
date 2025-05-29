@@ -93,13 +93,13 @@ int main(int argc, char **argv) {
     std::shared_ptr<complex2DReg> data; // Renamed 'traces' to 'data' for consistency with forward signature
     std::vector<std::shared_ptr<complex4DReg>> model; // Renamed 'slow_den' to 'model'
 
-    nx = 100;
+    nx = 500;
     auto ax1 = axis(nx, 0.f, 10.0f); // Example: 10m spacing
-    ny = 100;
+    ny = 200;
     auto ax2 = axis(ny, 0.f, 10.0f);
     nw = 100; // Total frequencies
     auto ax3 = axis(nw, 1.f, 1.f); // Freq: 1Hz to 10Hz
-    ns = 1; 
+    ns = 10; 
     nz = 10;
     auto ax4 = axis(nz, 0.f, 5.0f); // Z axis: 5m spacing
 
@@ -115,9 +115,9 @@ int main(int argc, char **argv) {
     root["pady"] = ny;
     root["taperx"] = 10;
     root["tapery"] = 10;
-    root["ginsu_x"] = 100.0; // Padding in meters
-    root["ginsu_y"] = 100.0;
-    root["ref_look_ahed"] = look_ahead;
+    root["ginsu_x"] = 0.0; // Padding in meters
+    root["ginsu_y"] = 0.0;
+    root["look_ahead"] = look_ahead;
     par = std::make_shared<jsonParamObj>(root); // Assuming constructor exists
 
     int n_unique_src = ns; // Define number of unique shots/IDs
@@ -162,19 +162,18 @@ int main(int argc, char **argv) {
         rx_all, ry_all, rz_all, r_ids_all,
         par, batches); // Pass the vector here
 
-    auto start_cpu_time = std::chrono::steady_clock::now();
-
     std::cout << "Running forward propagation..." << std::endl;
 
     // --- Profiling Section using NVTX ---
     // This marks the region in Nsight Systems / other NVTX-aware profilers
     nvtxRangePushA("StreamingPropagator::forward"); // Start NVTX range marker (ASCII version)
-
+    
+    auto start_cpu_time = std::chrono::steady_clock::now();
     streamer.forward(false, model, data); // Call the method to be profiled
+    auto end_cpu_time = std::chrono::steady_clock::now();
 
     nvtxRangePop(); // End NVTX range marker
     // --- End Profiling Section ---
-    auto end_cpu_time = std::chrono::steady_clock::now();
 
     std::cout << "Forward propagation finished." << std::endl;
 

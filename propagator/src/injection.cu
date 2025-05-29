@@ -4,10 +4,10 @@
 #include <KernelLauncher.cuh>
 #include <KernelLauncher.cu>
 
-template class KernelLauncher<float*, float*, float*, int*, float, float, int>;
+template class KernelLauncher<const float*, const float*, const float*, const int*, float, float, int>;
 
 __global__ void inj_forward(complex_vector* __restrict__ model, complex_vector* __restrict__ data, 
-  float* cx, float* cy, float* cz, int* ids, float oz, float dz, int iz_to_inject) {
+  const float* __restrict__ cx, const float* __restrict__ cy, const float* __restrict__ cz, const int* __restrict__ ids, float oz, float dz, int iz_to_inject) {
 
   int NX = data->n[0];
   int NY = data->n[1];
@@ -94,7 +94,7 @@ __global__ void inj_forward(complex_vector* __restrict__ model, complex_vector* 
 };
 
 __global__ void inj_adjoint(complex_vector* __restrict__ model, complex_vector* __restrict__ data, 
-  float* cx, float* cy, float* cz, int* ids, float oz, float dz, int iz_to_inject) {
+  const float* __restrict__ cx, const float* __restrict__ cy, const float* __restrict__ cz, const int* __restrict__ ids, float oz, float dz, int iz_to_inject) {
 
   int NX = data->n[0];
   int NY = data->n[1];
