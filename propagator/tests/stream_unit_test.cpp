@@ -119,6 +119,15 @@ protected:
         model[0]->set(1.0f); // Set model to constant 1.0
         model[1]->set(1.0f); // Set model to constant 1.0
 
+        // add a second layer to model for testing
+        for (int iw = 0; iw < nw; ++iw) {
+            for (int iy = 0; iy < ny; ++iy) {
+                for (int ix = 0; ix < nx; ++ix) {
+                    (*model[0]->_mat)[int(nz/2)][iw][iy][ix] = {2.f, 0.f};
+                }
+            }
+        }
+
         default_batches = {2, 2}; // Example default batches for tests
     }
 
@@ -426,18 +435,6 @@ TEST_F(StreamingPropagatorTest, ForwardNonAdd) {
   }
 
 }
-
-// Test forward with add = false
-TEST_F(StreamingPropagatorTest, Benchmark) {
-  // Use default batches {2, 2}
-  StreamingPropagator streamer(domainHyper, rangeHyper, slowHyper, wavelet,
-                               sx_all, sy_all, sz_all, s_ids_all,
-                               rx_all, ry_all, rz_all, r_ids_all,
-                               par, {2,2});
-streamer.forward(false, model, data);
-
-}
-
 
 
 

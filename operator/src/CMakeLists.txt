@@ -21,7 +21,6 @@ target_link_libraries(CudaOperator
 						genericCpp sepVector hypercube
 						jsonCpp sep3d sep
 					  CUDA::cudart_static CUDA::cufft_static
-						SZ3::SZ3
 						)
 
 install(TARGETS CudaOperator DESTINATION lib)

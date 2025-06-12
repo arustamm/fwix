@@ -297,28 +297,14 @@ class UpDown_Test : public testing::Test {
 TEST_F(UpDown_Test, down_fwd) { 
   for (int i=0; i < 3; ++i)
     ASSERT_NO_THROW(down->forward(false, wfld1, wfld2));
-}
 
-TEST_F(UpDown_Test, down_fwd_wfld) { 
-  auto wfld = down->get_wfld();
-  ASSERT_EQ(std::real(wfld->dot(wfld)), 0.);
-  wfld1->random();
-  down->forward(false, wfld1, wfld2);
-  
-  ASSERT_TRUE(std::real(wfld->dot(wfld)) > 0.);
+  ASSERT_TRUE(down->get_compression_ratio() > 1.) << "Compression ratio for down is smaller than 1";
+  std::cout << "Compression ratio for down: " << down->get_compression_ratio() << std::endl;
 }
 
 TEST_F(UpDown_Test, down_adj) { 
   for (int i=0; i < 3; ++i)
     ASSERT_NO_THROW(down->adjoint(false, wfld1, wfld2));
-}
-
-TEST_F(UpDown_Test, down_adj_wfld) { 
-  auto wfld = down->get_wfld();
-  ASSERT_EQ(std::real(wfld->dot(wfld)), 0.);
-  wfld2->random();
-  down->adjoint(false, wfld1, wfld2);
-  ASSERT_EQ(std::real(wfld->dot(wfld)), 0.);
 }
 
 TEST_F(UpDown_Test, down_dotTest) { 
@@ -328,32 +314,18 @@ TEST_F(UpDown_Test, down_dotTest) {
 }
 
 
-
 TEST_F(UpDown_Test, up_fwd) { 
   for (int i=0; i < 3; ++i)
     ASSERT_NO_THROW(up->forward(false, wfld1, wfld2));
+
+  ASSERT_TRUE(up->get_compression_ratio() > 1.) << "Compression ratio for up is smaller than 1";
+  std::cout << "Compression ratio for up: " << up->get_compression_ratio() << std::endl;
 }
 
-TEST_F(UpDown_Test, up_fwd_wfld) { 
-  auto wfld = up->get_wfld();
-  ASSERT_EQ(std::real(wfld->dot(wfld)), 0.);
-  wfld1->random();
-  up->forward(false, wfld1, wfld2);
-
-  ASSERT_TRUE(std::real(wfld->dot(wfld)) > 0.);
-}
 
 TEST_F(UpDown_Test, up_adj) { 
   for (int i=0; i < 3; ++i)
     ASSERT_NO_THROW(up->adjoint(false, wfld1, wfld2));
-}
-
-TEST_F(UpDown_Test, up_adj_wfld) { 
-  auto wfld = up->get_wfld();
-  ASSERT_EQ(std::real(wfld->dot(wfld)), 0.);
-  wfld2->random();
-  up->adjoint(false, wfld1, wfld2);
-  ASSERT_EQ(std::real(wfld->dot(wfld)), 0.);
 }
 
 TEST_F(UpDown_Test, up_dotTest) { 
@@ -488,9 +460,12 @@ class Propagator_Test : public testing::Test {
  
  TEST_F(Propagator_Test, fwd) { 
   ASSERT_NO_THROW(prop->forward(false, slow_den, traces));
+  auto ratio = prop->get_compression_ratio();
+  ASSERT_TRUE(ratio.first > 1.) << "Compression ratio for down is smaller than 1";
+  ASSERT_TRUE(ratio.second > 1.) << "Compression ratio for up is smaller than 1";
+  std::cout << "Compression ratio for down: " << ratio.first << ", up: " << ratio.second << std::endl;
   ASSERT_TRUE(std::real(traces->dot(traces)) > 0.) << "The output is zero";
  }
-
 
 int main(int argc, char **argv) {
   // Parse command-line arguments

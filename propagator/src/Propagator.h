@@ -42,6 +42,14 @@ public:
 	  void cu_adjoint(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data){
       throw std::runtime_error("Not implemented");
     };
+
+    std::pair<double, double> get_compression_ratio() {
+      std::pair<double, double> ratio;
+      ratio.first = down->get_compression_ratio();
+      ratio.second = up->get_compression_ratio();
+
+      return ratio;
+    }
 	
 
 protected:

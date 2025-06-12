@@ -38,6 +38,11 @@ if(TBB_found)
 	link_directories(${TBB_LIBRARIES})
 endif(TBB_found)
 
+# find compression library
+find_package(SZ3 REQUIRED CONFIG)
+# Get include directories from the SZ3::SZ3 target
+get_target_property(SZ3_INCLUDE_DIRS SZ3::SZ3 INTERFACE_INCLUDE_DIRECTORIES)
+
 # my Operator library
 include_directories(../operator/src)
 link_directories(../operator/lib)

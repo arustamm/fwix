@@ -138,8 +138,7 @@ void Propagator::forward(bool add, std::vector<std::shared_ptr<complex4DReg>> mo
   auto down_wfld = down->prop->get_ref_wfld();
   for (int iz=ax[3].n-1; iz >= 0; --iz) {
     down_wfld->zero();
-    size_t offset = iz * down->get_wfld_slice_size();
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(down_wfld->mat, down->get_wfld()->getVals() + offset, down->get_wfld_slice_size_in_bytes(), cudaMemcpyHostToDevice, _stream_));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(down_wfld->mat, down->get_wfld_slice(iz)->getVals(), down->get_wfld_slice_size_in_bytes(), cudaMemcpyHostToDevice, _stream_));
 		// CHECK_CUDA_ERROR(cudaStreamSynchronize(_stream_));
 
     reflect->set_depth(iz);
