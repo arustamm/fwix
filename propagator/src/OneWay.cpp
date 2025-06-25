@@ -6,7 +6,6 @@ using namespace SEP;
 void OneWay::one_step_fwd(int iz, complex_vector* __restrict__ wfld) {
 	// size_t offset = iz * this->get_wfld_slice_size();
 	CHECK_CUDA_ERROR(cudaMemcpyAsync(this->wfld->getVals(), wfld->mat, this->get_wfld_slice_size_in_bytes(), cudaMemcpyDeviceToHost, _stream_));
-	CHECK_CUDA_ERROR(cudaStreamSynchronize(_stream_));
 
 	std::future<void> fut = this->compress_slice(iz);
 	
@@ -19,6 +18,10 @@ void OneWay::one_step_fwd(int iz, complex_vector* __restrict__ wfld) {
 
 std::future<void> OneWay::compress_slice(int iz) {
 	return std::async(std::launch::async, [this, iz]() {
+
+		CHECK_CUDA_ERROR(cudaStreamSynchronize(_stream_));
+
+		zfp_field_set_pointer(_zfp_field_, reinterpret_cast<float*>(wfld->getVals()));
 
 		// Estimate maximum size for compressed data
     size_t max_compressed_bufsize = zfp_stream_maximum_size(_zfp_stream_, _zfp_field_);
@@ -43,6 +46,10 @@ std::future<void> OneWay::compress_slice(int iz) {
     // 3. Copy data from the temporary buffer to the final buffer
     std::memcpy(final_compressed_data, temp_compressed_data.get(), actual_compressed_size);
 
+		// Check if a buffer already exists and free it to prevent a memory leak
+    if (_compressed_wflds_[iz].first != nullptr) 
+        delete[] _compressed_wflds_[iz].first;
+
     // 4. Store the final buffer and its size
     _compressed_wflds_[iz] = {final_compressed_data, actual_compressed_size};
 	});
@@ -56,6 +63,7 @@ void OneWay::decompress_slice(int iz) {
     if (compressed_data_ptr == nullptr || compressed_size == 0) 
         std::runtime_error("Error: Compressed data for slice " + std::to_string(iz) + " is not available.");
 
+		zfp_field_set_pointer(_zfp_field_, reinterpret_cast<float*>(wfld->getVals()));
     // Open a bitstream using the compressed data buffer
     // The bitstream is read-only for decompression
     bitstream* stream = stream_open(compressed_data_ptr, compressed_size);

@@ -52,7 +52,7 @@ public:
   
     double compressed_size = static_cast<double>(this->get_total_compressed_size());
     double total_size = static_cast<double>(this->getDomainSizeInBytes() * m_ax[3].n);
-    double ratio = compressed_size / total_size;
+    double ratio = total_size / compressed_size;
 
     return ratio;
   }
@@ -62,8 +62,6 @@ public:
   }
 
   virtual ~OneWay() {
-
-    std::cout << get_compression_ratio() << " compression ratio" << std::endl;
 
     CHECK_CUDA_ERROR(cudaHostUnregister(wfld->getVals()));
     // wfld_file->close();
@@ -129,9 +127,8 @@ private:
 
     // --- ZFP Compression Setup ---
     // Get a float pointer to the original complex data (interleaved real/imaginary parts)
-    float* data_to_compress = reinterpret_cast<float*>(wfld->getVals());
     _zfp_stream_ = zfp_stream_open(NULL); // Allocate zfp stream
-    _zfp_field_ = zfp_field_4d(data_to_compress, zfp_type_float, 2*ax[0].n, ax[1].n, ax[2].n, ax[3].n);
+    _zfp_field_ = zfp_field_4d(NULL, zfp_type_float, 2*ax[0].n, ax[1].n, ax[2].n, ax[3].n);
 
     double rel_error_bound = par->getFloat("compress_error", 1E-6);
     zfp_stream_set_accuracy(_zfp_stream_, rel_error_bound);

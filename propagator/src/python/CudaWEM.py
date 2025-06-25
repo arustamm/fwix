@@ -40,6 +40,13 @@ class Propagator(Op.Operator):
 		mod = [m.cppMode for m in model]
 		self.cppMode.forward(add, mod, data.cppMode)
 
+	def get_compression_ratio(self):
+		"""
+		Returns the compression ratio of the propagator.
+		This is the ratio of the number of input samples to the number of output samples.
+		"""
+		return self.cppMode.get_compression_ratio()
+
 
 class PhaseShift(Op.Operator):
 	def __init__(self,model,data, dz, eps=0):

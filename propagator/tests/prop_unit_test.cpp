@@ -295,6 +295,7 @@ class UpDown_Test : public testing::Test {
 };
 
 TEST_F(UpDown_Test, down_fwd) { 
+  wfld1->random();
   for (int i=0; i < 3; ++i)
     ASSERT_NO_THROW(down->forward(false, wfld1, wfld2));
 
@@ -315,6 +316,7 @@ TEST_F(UpDown_Test, down_dotTest) {
 
 
 TEST_F(UpDown_Test, up_fwd) { 
+  wfld1->random();
   for (int i=0; i < 3; ++i)
     ASSERT_NO_THROW(up->forward(false, wfld1, wfld2));
 
@@ -429,7 +431,7 @@ class Propagator_Test : public testing::Test {
      std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
      std::uniform_real_distribution<> distrib_x(ax1.o + ax1.d, (ax1.n-2)*ax1.d);
      std::uniform_real_distribution<> distrib_y(ax2.o + ax2.d, (ax2.n-2)*ax2.d);
-     std::uniform_real_distribution<> distrib_z(oz + dz, (nz-2)*dz);
+     std::uniform_real_distribution<> distrib_z(oz + dz, (nz-1)*dz);
      std::uniform_real_distribution<> distrib_id(0, ns-1);
  
      // Generate the random coordinates

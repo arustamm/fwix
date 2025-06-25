@@ -57,7 +57,11 @@ py::class_<Propagator, std::shared_ptr<Propagator>>(clsOps, "Propagator")
     .def("forward",
         (void (Propagator::*)(bool, std::vector<std::shared_ptr<complex4DReg>>&, std::shared_ptr<complex2DReg>&)) &
         Propagator::forward,
-        "Nonlinear forward operator of Propagator");
+        "Nonlinear forward operator of Propagator")
+        
+    .def("get_compression_ratio", [](Propagator &self) {
+        return self.get_compression_ratio();
+    }, "Get compression ratio of Propagator");
 
 // py::class_<PhaseShift, std::shared_ptr<PhaseShift>>(clsOps, "PhaseShift")
 //     .def(py::init<std::shared_ptr<hypercube>, float, float &>(),
