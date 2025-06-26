@@ -123,6 +123,7 @@ void Propagator::forward(bool add, std::vector<std::shared_ptr<complex4DReg>> mo
    current_future.wait();
    
    // Propagate wavefield
+	 down->check_pipeline();
    down->one_step_fwd(iz, down->data_vec);
    
    // Update current_future for the next iteration
@@ -131,6 +132,8 @@ void Propagator::forward(bool add, std::vector<std::shared_ptr<complex4DReg>> mo
      future_queue.pop();
    }
  }
+ 	
+ 	down->wait_for_pipeline();
 
   up->data_vec->zero();
   // no need to sample reference slowness again as the RefSampler already holds all the refernce velocities
@@ -147,8 +150,10 @@ void Propagator::forward(bool add, std::vector<std::shared_ptr<complex4DReg>> mo
 		inj_rec->set_depth(iz);
     inj_rec->cu_adjoint(true, this->data_vec, up->data_vec);
 
+		up->check_pipeline();
     up->one_step_fwd(iz, up->data_vec);
 	}
+	up->wait_for_pipeline();
 
   CHECK_CUDA_ERROR(cudaMemcpyAsync(data->getVals(), this->data_vec->mat, getRangeSizeInBytes(), cudaMemcpyDeviceToHost, _stream_));
 

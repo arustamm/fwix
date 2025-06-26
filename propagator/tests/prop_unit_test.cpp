@@ -416,7 +416,7 @@ class Propagator_Test : public testing::Test {
      sources->random();
 
      auto slow4d = std::make_shared<complex4DReg>(nx, ny, nw, nz);
-     slow4d->set(1.f);
+     slow4d->random();
      auto den4d = std::make_shared<complex4DReg>(nx, ny, nw, nz);
      den4d->set(1.f);
     slow_den = {slow4d, den4d};

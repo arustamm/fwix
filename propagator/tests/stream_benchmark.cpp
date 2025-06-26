@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
     auto ax2 = axis(ny, 0.f, 10.0f);
     nw = 100; // Total frequencies
     auto ax3 = axis(nw, 1.f, 1.f); // Freq: 1Hz to 10Hz
-    ns = 10; 
+    ns = 1; 
     nz = 10;
     auto ax4 = axis(nz, 0.f, 5.0f); // Z axis: 5m spacing
 
@@ -118,6 +118,8 @@ int main(int argc, char **argv) {
     root["ginsu_x"] = 0.0; // Padding in meters
     root["ginsu_y"] = 0.0;
     root["look_ahead"] = look_ahead;
+    root["compress_error"] = 1e-6;
+    root["wflds_to_store"] = 4;
     par = std::make_shared<jsonParamObj>(root); // Assuming constructor exists
 
     int n_unique_src = ns; // Define number of unique shots/IDs
