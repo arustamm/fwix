@@ -9,6 +9,7 @@ prop_benchmark.cpp
 stream_unit_test.cpp
 stream_benchmark.cpp
 ps_benchmark.cpp
+born_unit_test.cpp
 )
 
 foreach(src ${TEST_SOURCES})

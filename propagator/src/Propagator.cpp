@@ -1,4 +1,5 @@
 #include <Propagator.h>
+#include <WavefieldPool.h>
 #include <tbb/tbb.h>
 #include <tbb/parallel_pipeline.h>
 // Here I treat Propagator as a linear operator from wavelet -> data
@@ -56,9 +57,10 @@ CudaOperator<complex2DReg, complex2DReg>(domain, range, model, data, grid, block
                                         this->data_vec, inj_src->data_vec, _grid_, _block_, _stream_);                                          
   
   ref = std::make_unique<RefSampler>(slow_hyper, par);
+  auto wfld_pool = std::make_shared<WavefieldPool>(wfld_hyper, par);
   // TODO: dont have to allocate temp wavefields twice for up and down, can reuse instead
-  down = std::make_unique<Downward>(wfld_hyper, slow_hyper, par, ref, inj_src->data_vec, inj_src->data_vec, _grid_, _block_, _stream_);
-  up = std::make_unique<Upward>(wfld_hyper, slow_hyper, par, ref, inj_src->data_vec, inj_src->data_vec, _grid_, _block_, _stream_);
+  down = std::make_unique<Downward>(wfld_hyper, slow_hyper, par, ref, wfld_pool, inj_src->data_vec, inj_src->data_vec, _grid_, _block_, _stream_);
+  up = std::make_unique<Upward>(wfld_hyper, slow_hyper, par, ref, wfld_pool, inj_src->data_vec, inj_src->data_vec, _grid_, _block_, _stream_);
   reflect = std::make_unique<Reflect>(wfld_hyper, slow_hyper, inj_src->data_vec, inj_src->data_vec, _grid_, _block_, _stream_);
 
   look_ahead = par->getInt("look_ahead", 1);
@@ -123,7 +125,7 @@ void Propagator::forward(bool add, std::vector<std::shared_ptr<complex4DReg>> mo
    current_future.wait();
    
    // Propagate wavefield
-	 down->check_pipeline();
+	 down->check_ready();
    down->one_step_fwd(iz, down->data_vec);
    
    // Update current_future for the next iteration
@@ -133,27 +135,27 @@ void Propagator::forward(bool add, std::vector<std::shared_ptr<complex4DReg>> mo
    }
  }
  	
- 	down->wait_for_pipeline();
+ 	down->wait_to_finish();
 
   up->data_vec->zero();
   // no need to sample reference slowness again as the RefSampler already holds all the refernce velocities
   // up + reflect and record
-  auto down_wfld = down->prop->get_ref_wfld();
+  auto down_wfld = down->getPropagator()->get_ref_wfld();
   for (int iz=ax[3].n-1; iz >= 0; --iz) {
     down_wfld->zero();
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(down_wfld->mat, down->get_wfld_slice(iz)->getVals(), down->get_wfld_slice_size_in_bytes(), cudaMemcpyHostToDevice, _stream_));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(down_wfld->mat, down->get_wfld_slice(iz)->getVals(), down->getDomainSizeInBytes(), cudaMemcpyHostToDevice, _stream_));
 		CHECK_CUDA_ERROR(cudaStreamSynchronize(_stream_));
 
     reflect->set_depth(iz);
-		reflect->cu_forward(true, down_wfld, up->data_vec);
+		reflect->cu_forward(false, down_wfld, up->data_vec);
 
 		inj_rec->set_depth(iz);
     inj_rec->cu_adjoint(true, this->data_vec, up->data_vec);
 
-		up->check_pipeline();
+		up->check_ready();
     up->one_step_fwd(iz, up->data_vec);
 	}
-	up->wait_for_pipeline();
+	up->wait_to_finish();
 
   CHECK_CUDA_ERROR(cudaMemcpyAsync(data->getVals(), this->data_vec->mat, getRangeSizeInBytes(), cudaMemcpyDeviceToHost, _stream_));
 

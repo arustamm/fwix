@@ -4,8 +4,6 @@
 #include <KernelLauncher.cuh>
 #include <KernelLauncher.cu>
 
-template class KernelLauncher<const float*, const float*, const float*, const cuFloatComplex*, float, float>;
-
 __global__ void ps_forward(complex_vector* __restrict__ model, complex_vector* __restrict__ data, 
   const float* __restrict__  w2, const float* __restrict__  kx, const float* __restrict__  ky, const cuFloatComplex* __restrict__ slow_ref, float dz, float eps) {
 

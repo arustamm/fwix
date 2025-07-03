@@ -4,8 +4,6 @@
 #include <KernelLauncher.cuh>
 #include <KernelLauncher.cu>
 
-template class KernelLauncher<int, int>;
-
 __global__ void taper_forward(complex_vector* __restrict__ model, complex_vector* __restrict__ data, int tapx, int tapy) {
 
   int flat_ind;

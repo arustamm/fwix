@@ -5,8 +5,6 @@
 #include <KernelLauncher.cuh>
 #include <KernelLauncher.cu>
 
-template class KernelLauncher<const complex_vector*, const complex_vector*>;
-
 __device__ cuFloatComplex csqrtf(cuFloatComplex z) {
   float a = z.x;
   float b = z.y;

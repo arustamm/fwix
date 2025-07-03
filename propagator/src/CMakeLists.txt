@@ -7,6 +7,8 @@ selector.cu
 injection.cu
 reflect.cu
 taper.cu
+scatter.cu
+imaging_condition.cu
 )
 
 set(CU_INC 
@@ -27,6 +29,10 @@ Reflect.cpp
 Propagator.cpp
 StreamingPropagator.cpp
 utils.cpp
+Scatter.cpp
+WavefieldPool.cpp
+ImagingCondition.cpp
+ForwardScattering.cpp
 )
 
 set(CPP_INC 
@@ -41,6 +47,10 @@ Propagator.h
 Taper.h
 StreamingPropagator.h
 utils.h
+Scatter.h
+WavefieldPool.h
+ImagingCondition.h
+ForwardScattering.h
 )
 # add_library(cpp_objects OBJECT ${CPP_SRC} ${CPP_INC})
 # set_property(TARGET cpp_objects PROPERTY CUDA_SEPARABLE_COMPILATION ON)

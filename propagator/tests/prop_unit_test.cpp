@@ -106,8 +106,10 @@ class PSPI_Test : public testing::Test {
 
 TEST_F(PSPI_Test, fwd) { 
   auto out = space4d->clone();
-  for (int i=0; i < 3; ++i)
+  for (int i=0; i < 3; ++i) {
     ASSERT_NO_THROW(pspi->forward(false, space4d, out));
+    ASSERT_TRUE(std::real(out->dot(out)) > 0.) << "The output is zero";
+  }
 }
 
 TEST_F(PSPI_Test, cu_fwd) { 
@@ -414,9 +416,10 @@ class Propagator_Test : public testing::Test {
 
      auto sources = traces->clone();
      sources->random();
+     sources->set(1.f);
 
      auto slow4d = std::make_shared<complex4DReg>(nx, ny, nw, nz);
-     slow4d->random();
+     slow4d->set(1.f);
      auto den4d = std::make_shared<complex4DReg>(nx, ny, nw, nz);
      den4d->set(1.f);
     slow_den = {slow4d, den4d};
