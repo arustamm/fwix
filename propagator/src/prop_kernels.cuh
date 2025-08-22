@@ -64,10 +64,39 @@ __global__ void scale_by_iw_adj(complex_vector* __restrict__ model, complex_vect
   const float* __restrict__ w, float dz);
 typedef KernelLauncher<const float*, float> Scale_by_iw;
 
-__global__ void pad(complex_vector* __restrict__ model, complex_vector* __restrict__ data);
+__global__ void pad_fwd(complex_vector* __restrict__ model, complex_vector* __restrict__ data);
+__global__ void pad_adj(complex_vector* __restrict__ model, complex_vector* __restrict__ data);
 typedef KernelLauncher<> Pad_launcher;
 
 // imaging condition
 __global__ void ic_fwd(complex_vector* __restrict__ model, complex_vector* __restrict__ data, const complex_vector* __restrict__ bg_wfld);
 __global__ void ic_adj(complex_vector* __restrict__ model, complex_vector* __restrict__ data, const complex_vector* __restrict__ bg_wfld);
 typedef KernelLauncher<const complex_vector*> IC_launcher;
+
+// dreflect
+__global__ void drefl_forward(
+    complex_vector* __restrict__ model,
+    complex_vector* __restrict__ data,
+    const complex_vector* __restrict__ model_slow,
+    const complex_vector* __restrict__ model_den);
+__global__ void drefl_adjoint(
+    complex_vector* __restrict__ model,
+    complex_vector* __restrict__ data,
+    const complex_vector* __restrict__ model_slow,
+    const complex_vector* __restrict__ model_den);
+
+
+__device__ __forceinline__ cuFloatComplex csqrtf(cuFloatComplex z) {
+  float a = z.x;
+  float b = z.y;
+
+  if (a == 0.0f && b == 0.0f) {
+      return make_cuFloatComplex(0.0f, 0.0f); // Handle zero case
+  }
+
+  float r = sqrtf(a * a + b * b);
+  float x = sqrtf(0.5f * (r + a));
+  float y = copysignf(sqrtf(0.5f * (r - a)), b); // Correctly handle sign of imaginary part
+
+  return make_cuFloatComplex(x, y);
+}

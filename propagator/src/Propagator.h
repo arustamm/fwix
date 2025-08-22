@@ -50,22 +50,40 @@ public:
 
       return ratio;
     }
+
+    std::shared_ptr<Downward> getDown() {return down;}
+    std::shared_ptr<Upward> getUp() {return up;}
+    std::shared_ptr<Reflect> getReflect() {return reflect;}
+    std::shared_ptr<Injection> getInjSrc() {return inj_src;}
+    std::shared_ptr<Injection> getInjRec() {return inj_rec;}
+    std::shared_ptr<hypercube> getWfldSliceHyper() {return wfld_hyper;}
+    std::shared_ptr<RefSampler> getRefSampler() {return ref;}
+    std::shared_ptr<WavefieldPool> getWfldPool() {return wfld_pool;}
+
 	
 
 protected:
+    // Wavefield pool
+    std::shared_ptr<WavefieldPool> wfld_pool;
+
     // One-way propagators
-    std::unique_ptr<Downward> down;
-    std::unique_ptr<Upward> up;
-    std::unique_ptr<Reflect> reflect;
+    std::shared_ptr<Downward> down;
+    std::shared_ptr<Upward> up;
+    std::shared_ptr<Reflect> reflect;
 
     // Injection operators
-    std::unique_ptr<Injection> inj_src;
-    std::unique_ptr<Injection> inj_rec;
+    std::shared_ptr<Injection> inj_src;
+    std::shared_ptr<Injection> inj_rec;
     
     // Reference velocity sampler
     std::shared_ptr<RefSampler> ref;
     int look_ahead;
+    int decomp_look_ahead;
+
+    std::string _run_id;
+    
 private:
     std::vector<axis> ax;
     std::shared_ptr<hypercube> _slow_hyper;
+    std::shared_ptr<hypercube> wfld_hyper;
 };

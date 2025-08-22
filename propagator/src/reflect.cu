@@ -5,21 +5,6 @@
 #include <KernelLauncher.cuh>
 #include <KernelLauncher.cu>
 
-__device__ cuFloatComplex csqrtf(cuFloatComplex z) {
-  float a = z.x;
-  float b = z.y;
-
-  if (a == 0.0f && b == 0.0f) {
-      return make_cuFloatComplex(0.0f, 0.0f); // Handle zero case
-  }
-
-  float r = sqrtf(a * a + b * b);
-  float x = sqrtf(0.5f * (r + a));
-  float y = copysignf(sqrtf(0.5f * (r - a)), b); // Correctly handle sign of imaginary part
-
-  return make_cuFloatComplex(x, y);
-}
-
 __global__ void refl_forward(complex_vector* __restrict__ model, complex_vector* __restrict__ data, 
   const complex_vector* __restrict__ slow_slice, const complex_vector* __restrict__ den_slice) {
 

@@ -9,8 +9,12 @@
 __global__ void ic_fwd(
     complex_vector* __restrict__ model,  
     complex_vector* __restrict__ data,
-    const complex_vector* __restrict__ source_wfld
+    const complex_vector* __restrict__ bg_wfld
 ) {
+    // Here the model is not padded while the data is padded.
+    const int nx = model->n[0];
+    const int ny = model->n[1];
+    
     const int NX = data->n[0];
     const int NY = data->n[1];
     const int NW = data->n[2];
@@ -25,15 +29,15 @@ __global__ void ic_fwd(
     int jws = blockDim.z * gridDim.z;
 
     const int dims[] = {NS, NW, NY, NX};
-    const int im_dims[] = {NW, NY, NX};
+    const int im_dims[] = {NW, ny, nx};
 
     for (int iws = iws0; iws < NW*NS; iws += jws) {
         int iw = iws / NS;  // Frequency index
         int is = iws % NS; // Source index
 
         // Loop over spatial points in the receiver wavefield
-      for (int iy = iy0; iy < NY; iy += jy) {
-        for (int ix = ix0; ix < NX; ix += jx) {
+      for (int iy = iy0; iy < ny; iy += jy) {
+        for (int ix = ix0; ix < nx; ix += jx) {
 
           int im_ind[] = {iw, iy, ix};
           size_t flat_ind = ND_TO_FLAT(im_ind, im_dims);
@@ -43,7 +47,7 @@ __global__ void ic_fwd(
           flat_ind = ND_TO_FLAT(nd_ind, dims);
 
           // Get values
-          cuFloatComplex src_val = source_wfld->mat[flat_ind];
+          cuFloatComplex src_val = bg_wfld->mat[flat_ind];
           data->mat[flat_ind] = cuCaddf(data->mat[flat_ind], cuCmulf(src_val, img_val));
       }
     }
@@ -53,8 +57,11 @@ __global__ void ic_fwd(
 __global__ void ic_adj(
     complex_vector* __restrict__ model,  
     complex_vector* __restrict__ data,
-    const complex_vector* __restrict__ source_wfld
+    const complex_vector* __restrict__ bg_wfld
 ) {
+  const int nx = model->n[0];
+  const int ny = model->n[1];
+  
   const int NX = data->n[0];
   const int NY = data->n[1];
   const int NW = data->n[2];
@@ -69,21 +76,21 @@ __global__ void ic_adj(
   int jws = blockDim.z * gridDim.z;
 
   const int dims[] = {NS, NW, NY, NX};
-  const int im_dims[] = {NW, NY, NX};
+  const int im_dims[] = {NW, ny, nx};
 
   for (int iws = iws0; iws < NW*NS; iws += jws) {
       int iw = iws / NS;  // Frequency index
       int is = iws % NS; // Source index
 
       // Loop over spatial points in the receiver wavefield
-    for (int iy = iy0; iy < NY; iy += jy) {
-      for (int ix = ix0; ix < NX; ix += jx) {
+    for (int iy = iy0; iy < ny; iy += jy) {
+      for (int ix = ix0; ix < nx; ix += jx) {
 
         int nd_ind[] = {is, iw, iy, ix};
         size_t flat_ind = ND_TO_FLAT(nd_ind, dims);
 
         // Get values
-        cuFloatComplex src_val = source_wfld->mat[flat_ind];
+        cuFloatComplex src_val = bg_wfld->mat[flat_ind];
         cuFloatComplex rec_val = data->mat[flat_ind];
         
         // Adjoint: conj(source) * receiver

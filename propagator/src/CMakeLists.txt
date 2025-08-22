@@ -9,6 +9,7 @@ reflect.cu
 taper.cu
 scatter.cu
 imaging_condition.cu
+lin_reflect.cu
 )
 
 set(CU_INC 
@@ -32,7 +33,9 @@ utils.cpp
 Scatter.cpp
 WavefieldPool.cpp
 ImagingCondition.cpp
-ForwardScattering.cpp
+Scattering.cpp
+ExtendedBorn.cpp
+LinReflect.cpp
 )
 
 set(CPP_INC 
@@ -50,7 +53,9 @@ utils.h
 Scatter.h
 WavefieldPool.h
 ImagingCondition.h
-ForwardScattering.h
+Scattering.h
+ExtendedBorn.h
+LinReflect.h
 )
 # add_library(cpp_objects OBJECT ${CPP_SRC} ${CPP_INC})
 # set_property(TARGET cpp_objects PROPERTY CUDA_SEPARABLE_COMPILATION ON)

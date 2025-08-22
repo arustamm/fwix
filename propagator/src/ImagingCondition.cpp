@@ -12,16 +12,20 @@ ImagingCondition::ImagingCondition(
 ) : 
 CudaOperator<complex3DReg, complex4DReg>(domain, range, model, data, grid, block, stream) ,
 _oneway(oneway)	{
+	
+	_grid_ = {32, 4, 4};
+  	_block_ = {16, 16, 4};
+
 	_bg_wfld_slice = data_vec->cloneSpace();
 	launchIC = IC_launcher(&ic_fwd, &ic_adj, _grid_, _block_, _stream_);
 }
 
 void ImagingCondition::set_depth(int iz) {
-	auto bg_wfld = _oneway->get_wfld_slice(iz);
+	auto bg_wfld = _oneway->get_next_wfld_slice();
 	CHECK_CUDA_ERROR(cudaMemcpyAsync(
 		_bg_wfld_slice->mat,
 		bg_wfld->getVals(), 
-		getDomainSizeInBytes(), 
+		getRangeSizeInBytes(), 
 		cudaMemcpyHostToDevice, _stream_
 	));
 }

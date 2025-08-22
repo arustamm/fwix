@@ -31,14 +31,9 @@ __global__ void ps_forward(complex_vector* __restrict__ model, complex_vector* _
         a = w2[iw]*sre - (kx[ix]*kx[ix] + ky[iy]*ky[iy]);
         b = w2[iw]*(sim-eps*sre);
         c = sqrtf(a*a + b*b);
-        if (b <= 0) {
-          re = sqrtf((c+a)/2);
-          im = -sqrtf((c-a)/2);
-        }
-        else {
-          re = -sqrtf((c+a)/2);
-				  im = -sqrtf((c-a)/2);
-        }
+
+        re = sqrtf((c+a)/2);
+        im = -sqrtf((c-a)/2);
 
         float att = exp(im*dz);
         float coss;

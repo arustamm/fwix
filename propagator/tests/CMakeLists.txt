@@ -10,6 +10,7 @@ stream_unit_test.cpp
 stream_benchmark.cpp
 ps_benchmark.cpp
 born_unit_test.cpp
+born_benchmark.cpp
 )
 
 foreach(src ${TEST_SOURCES})

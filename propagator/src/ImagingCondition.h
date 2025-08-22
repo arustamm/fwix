@@ -38,6 +38,7 @@ public:
 private:
     std::shared_ptr<OneWay> _oneway;  // OneWay object
     IC_launcher launchIC;            // Kernel launcher for imaging condition
+    Pad_launcher launch_pad;            // Kernel launcher for padding
     complex_vector* _bg_wfld_slice; // Background wavefield slice
 };
 

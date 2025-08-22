@@ -46,6 +46,22 @@ class Propagator(Op.Operator):
 		This is the ratio of the number of input samples to the number of output samples.
 		"""
 		return self.cppMode.get_compression_ratio()
+	
+class ExtendedBorn(Op.Operator):
+	# model here refers to the slowness model
+	# data refers to the recorded traces
+	def __init__(self, model, data, slow_den, propagator):
+		self.setDomainRange(model,data)
+		mod = [m.cppMode for m in slow_den]
+		# cpp code needs the hypercube corresponding to the injected source traces
+		self.cppMode = pyCudaWEM.ExtendedBorn(
+			model[0].getHyper().cppMode, data.getHyper().cppMode, 
+			mod, propagator.cppMode
+		)
+
+	def forward(self,add,model,data):
+		mod = [m.cppMode for m in model]
+		self.cppMode.forward(add, mod, data.cppMode)
 
 
 class PhaseShift(Op.Operator):

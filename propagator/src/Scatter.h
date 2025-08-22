@@ -94,6 +94,8 @@ protected:
         auto h_w = std::vector<float>(ax.n);
         for (int i=0; i < h_w.size(); ++i) {
             float f = ax.o + i*ax.d;
+            if (f == 0.f)
+                throw std::runtime_error("Frequency is zero in the scattering operator!");
             h_w[i] = 2*M_PI*f;
         }
         CHECK_CUDA_ERROR(cudaMemcpyAsync(w, h_w.data(), sizeof(float)*ax.n, cudaMemcpyHostToDevice, _stream_));

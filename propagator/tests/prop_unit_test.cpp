@@ -299,10 +299,11 @@ class UpDown_Test : public testing::Test {
 TEST_F(UpDown_Test, down_fwd) { 
   wfld1->random();
   for (int i=0; i < 3; ++i)
-    ASSERT_NO_THROW(down->forward(false, wfld1, wfld2));
+    ASSERT_NO_THROW(down->forward(wfld1));
 
-  ASSERT_TRUE(down->get_compression_ratio() > 1.) << "Compression ratio for down is smaller than 1";
   std::cout << "Compression ratio for down: " << down->get_compression_ratio() << std::endl;
+  ASSERT_TRUE(down->get_compression_ratio() > 1.) << "Compression ratio for down is smaller than 1";
+  
 }
 
 TEST_F(UpDown_Test, down_adj) { 
@@ -320,10 +321,10 @@ TEST_F(UpDown_Test, down_dotTest) {
 TEST_F(UpDown_Test, up_fwd) { 
   wfld1->random();
   for (int i=0; i < 3; ++i)
-    ASSERT_NO_THROW(up->forward(false, wfld1, wfld2));
+    ASSERT_NO_THROW(up->forward(wfld1));
 
-  ASSERT_TRUE(up->get_compression_ratio() > 1.) << "Compression ratio for up is smaller than 1";
   std::cout << "Compression ratio for up: " << up->get_compression_ratio() << std::endl;
+  ASSERT_TRUE(up->get_compression_ratio() > 1.) << "Compression ratio for up is smaller than 1";
 }
 
 

@@ -5,7 +5,7 @@ using namespace SEP;
 
 void OneWay::one_step_fwd(int iz, complex_vector* __restrict__ wfld) {
 
-  _wfld_pool->compress_slice_async(iz, wfld, _stream_, _compressed_wflds);
+  _wfld_pool->compress_slice_async(iz, wfld, _stream_, _tag);
 
   prop->set_depth(iz);
   prop->cu_forward(wfld);
@@ -31,10 +31,6 @@ void Downward::cu_forward(bool add, complex_vector* __restrict__ model, complex_
 	_wfld_pool->wait_to_finish();
 
 	data->add(model);
-	
-	// prop->set_slow(slow->next_batch());
-	// cudaMemCpyAsync(_slow_chunk, slow->next(), H2D, stream);
-// }
 
 }
 

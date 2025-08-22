@@ -1,6 +1,7 @@
 #include "Reflect.h"
 
-Reflect::Reflect (const std::shared_ptr<hypercube>& domain, std::vector<std::shared_ptr<complex4DReg>> slow_impedance, 
+BaseReflect::BaseReflect (const std::shared_ptr<hypercube>& domain, 
+  const std::vector<std::shared_ptr<complex4DReg>>& slow_impedance, 
   complex_vector* model, complex_vector* data, 
   dim3 grid, dim3 block, cudaStream_t stream) :
 CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block, stream) {
@@ -8,14 +9,14 @@ CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, bloc
   set_background_model(slow_impedance);
 };
 
-Reflect::Reflect (const std::shared_ptr<hypercube>& domain, std::shared_ptr<hypercube> slow_hyper, 
+BaseReflect::BaseReflect (const std::shared_ptr<hypercube>& domain, std::shared_ptr<hypercube> slow_hyper, 
   complex_vector* model, complex_vector* data, 
   dim3 grid, dim3 block, cudaStream_t stream) :
 CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block, stream) {
   initialize(slow_hyper);
 };
 
-void Reflect::initialize(std::shared_ptr<hypercube> slow_hyper) {
+void BaseReflect::initialize(std::shared_ptr<hypercube> slow_hyper) {
   _grid_ = {32, 4, 4};
   _block_ = {16, 16, 4};
 
@@ -28,10 +29,9 @@ void Reflect::initialize(std::shared_ptr<hypercube> slow_hyper) {
   d_den_slice = make_complex_vector(std::make_shared<hypercube>(nx, ny, nw, 2), _grid_, _block_, _stream_);
   
   slice_size = nx * ny * nw;
-
-  launcher = Refl_launcher(&refl_forward, &refl_adjoint, _grid_, _block_, _stream_);
-  launcher_in_place = Refl_launcher(&refl_forward_in, &refl_adjoint_in, _grid_, _block_, _stream_);
 }
+
+
 
 void Reflect::cu_forward(bool add, complex_vector* __restrict__ model, complex_vector* __restrict__ data) {
 

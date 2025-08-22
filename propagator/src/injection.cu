@@ -31,17 +31,21 @@ __global__ void inj_forward(complex_vector* __restrict__ model, complex_vector* 
   cuFloatComplex w[4]; 
 
   for (int itrace=itrace0; itrace < NTRACE; itrace += jtrace) {
-    int iy = (cy[itrace]-OY)/DY;
+    int iy = floorf((cy[itrace]-OY)/DY);
     float y = OY + iy*DY;
     float ly = 1.f - (cy[itrace] - y) / DY;
 
-    int ix = (cx[itrace]-OX)/DX;
+    int ix = floorf((cx[itrace]-OX)/DX);
     float x = OX + ix*DX;
     float lx = 1.f - (cx[itrace] - x) / DX;
 
-    int iz = (cz[itrace]-oz)/dz;
+    int iz = floorf((cz[itrace]-oz)/dz);
     float z = oz + iz*dz;
     float lz = 1.f - (cz[itrace] - z) / dz;
+
+    if (ix < 0 || ix >= NX - 1 || iy < 0 || iy >= NY - 1) {
+      continue;
+    }
 
     // Skip if current Z level is not relevant for this trace's interpolation
     if (iz_to_inject != iz && iz_to_inject != iz + 1) {
@@ -118,17 +122,21 @@ __global__ void inj_adjoint(complex_vector* __restrict__ model, complex_vector* 
   cuFloatComplex w[4];
 
   for (int itrace=itrace0; itrace < NTRACE; itrace += jtrace) {
-    int iy = (cy[itrace]-OY)/DY;
+    int iy = floorf((cy[itrace]-OY)/DY);
     float y = OY + iy*DY;
     float ly = 1.f - (cy[itrace] - y) / DY;
 
-    int ix = (cx[itrace]-OX)/DX;
+    int ix = floorf((cx[itrace]-OX)/DX);
     float x = OX + ix*DX;
     float lx = 1.f - (cx[itrace] - x) / DX;
 
-    int iz = (cz[itrace]-oz)/dz;
+    int iz = floorf((cz[itrace]-oz)/dz);
     float z = oz + iz*dz;
     float lz = 1.f - (cz[itrace] - z) / dz;
+
+    if (ix < 0 || ix >= NX - 1 || iy < 0 || iy >= NY - 1) {
+      continue;
+    }
 
     // Skip if current Z level is not relevant for this trace's interpolation
     if (iz_to_inject != iz && iz_to_inject != iz + 1) {

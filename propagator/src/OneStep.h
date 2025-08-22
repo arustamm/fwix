@@ -59,6 +59,7 @@ protected:
   std::unique_ptr<Taper> taper;
 
 private:
+
   void initialize(std::shared_ptr<hypercube> domain, std::shared_ptr<hypercube> slow_hyper, std::shared_ptr<paramObj> par) {
     _nref_ = par->getInt("nref",1);
     taper = std::make_unique<Taper>(domain, par, model_vec, data_vec, _grid_, _block_, _stream_);

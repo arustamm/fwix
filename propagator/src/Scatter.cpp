@@ -8,7 +8,7 @@ Scatter::Scatter(
   std::shared_ptr<paramObj> par,
 complex_vector* model, complex_vector* data, dim3 grid, dim3 block, cudaStream_t stream) 
 : CudaOperator<complex4DReg, complex4DReg>(domain, domain, model, data, grid, block, stream), _slow_(slow) {
-    
+  
   _eps_ = par->getFloat("eps_scat",0.04);
   _dz_ = slow->getHyper()->getAxis(4).d;
   _ntaylor = par->getInt("taylor", 1);
@@ -23,7 +23,7 @@ complex_vector* model, complex_vector* data, dim3 grid, dim3 block, cudaStream_t
   launch_mult_kxky = Mult_kxky(&mult_kxky, _grid_, _block_, _stream_);
   launch_scale_by_slow = Slow_scale(&slow_scale_fwd, &slow_scale_adj, _grid_, _block_, _stream_);
   launch_scale_by_iw = Scale_by_iw(&scale_by_iw_fwd, &scale_by_iw_adj, _grid_, _block_, _stream_);
-  launch_pad = Pad_launcher(&pad, _grid_, _block_, _stream_);
+  launch_pad = Pad_launcher(&pad_fwd, &pad_adj, _grid_, _block_, _stream_);
 
   // Fill wavenumber and frequency arrays
   d_kx = fill_in_k(domain->getAxis(1)); // x spatial axis
@@ -53,6 +53,8 @@ complex_vector* model, complex_vector* data, dim3 grid, dim3 block, cudaStream_t
   // Allocate temporary wavefields
   _wfld_k = model_vec->cloneSpace();
   _wfld_scaled = model_vec->cloneSpace();
+  _wfld_k->set_grid_block(_grid_, _block_);
+  _wfld_scaled->set_grid_block(_grid_, _block_);
   
 };
 
@@ -60,6 +62,7 @@ void Scatter::set_grid_block(dim3 grid, dim3 block) {
   launch_mult_kxky.set_grid_block(grid, block);
   launch_scale_by_slow.set_grid_block(grid, block);
   launch_scale_by_iw.set_grid_block(grid, block);
+  launch_pad.set_grid_block(grid, block);
 }
 
 void Scatter::set_depth(int iz) {

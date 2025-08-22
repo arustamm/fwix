@@ -221,7 +221,7 @@ __global__ void scale_by_iw_adj(complex_vector* __restrict__ model, complex_vect
   }
 }
 
-__global__ void pad(
+__global__ void pad_fwd(
   complex_vector* __restrict__ model, //unpadded
   complex_vector* __restrict__ data //padded
 ) {
@@ -259,5 +259,45 @@ __global__ void pad(
     }
   }
 }
+
+__global__ void pad_adj(
+  complex_vector* __restrict__ model, //unpadded
+  complex_vector* __restrict__ data //padded
+) {
+
+  int NX = data->n[0];
+  int NY = data->n[1];
+  int NW = data->n[2];
+  int nx = model->n[0];
+  int ny = model->n[1];
+  int dims[] = {NW, NY, NX};
+  int in_dims[] = {NW, ny, nx};
+  
+  int ix0 = threadIdx.x + blockDim.x * blockIdx.x;
+  int iy0 = threadIdx.y + blockDim.y * blockIdx.y;
+  int iw0 = threadIdx.z + blockDim.z * blockIdx.z;
+
+  int jx = blockDim.x * gridDim.x;
+  int jy = blockDim.y * gridDim.y;
+  int jw = blockDim.z * gridDim.z;
+
+  for (int iw = iw0; iw < NW; iw += jw) {    
+    for (int iy = iy0; iy < NY; iy += jy) {
+      for (int ix = ix0; ix < NX; ix += jx) {
+        
+        int out_nd_ind[] = {iw, iy, ix};
+        size_t out_ind = ND_TO_FLAT(out_nd_ind, dims);
+        // Determine input indices with padding by extending last values
+        int ix_in = min(ix, nx - 1);
+        int iy_in = min(iy, ny - 1);
+        int in_nd_ind[] = {iw, iy_in, ix_in};
+        size_t in_ind = ND_TO_FLAT(in_nd_ind, in_dims);
+
+        model->mat[in_ind] = cuCaddf(model->mat[in_ind], data->mat[out_ind]);
+      }
+    }
+  }
+}
+
     
 
